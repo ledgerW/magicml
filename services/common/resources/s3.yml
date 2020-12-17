@@ -3,7 +3,7 @@ Resources:
   RawDataBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${self:custom.raw_data_bucket}.${self:custom.stage}
+      BucketName: ${self:custom.raw_data_bucket}
       # Set the CORS policy
       CorsConfiguration:
         CorsRules:
@@ -23,7 +23,7 @@ Resources:
   CleanDataBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${self:custom.clean_data_bucket}.${self:custom.stage}
+      BucketName: ${self:custom.clean_data_bucket}
       # Set the CORS policy
       CorsConfiguration:
         CorsRules:

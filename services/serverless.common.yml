@@ -8,8 +8,8 @@ custom:
       name: ${self:service}
 
   #S3
-  raw_data_bucket: ${self:service}-raw_data
-  clean_data_bucket: ${self:service}-clean_data
+  raw_data_bucket: '${self:service}-raw_data.${self:custom.stage}'
+  clean_data_bucket: '${self:service}-clean_data.${self:custom.stage}'
 
   # EFS
   data_prep_mnt_path: data_prep
