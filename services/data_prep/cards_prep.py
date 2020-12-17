@@ -43,7 +43,7 @@ def worker(event, context):
 
     # Get raw data from S3
     for s3_key in card_files:
-      local_path = LOCAL_RAW_PATH + '/' + file_key.split('/')[-1]
+      local_path = LOCAL_RAW_PATH + '/' + s3_key.split('/')[-1]
       s3.download_file(RAW_BUCKET, s3_key, local_path)
 
     # Clean data

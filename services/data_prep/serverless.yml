@@ -36,8 +36,8 @@ provider:
 
   environment:
     STAGE: ${self:custom.stage}
-    RAW_BUCKET: ${self:custom.raw_data_bucket}
-    CLEAN_BUCKET: ${self:custom.clean_data_bucket}
+    RAW_BUCKET: 'magicml-common-raw-data.${self:custom.stage}'
+    CLEAN_BUCKET: 'magicml-common-clean-data.${self:custom.stage}'
     EFS_MOUNT_PATH: '/mnt${self:custom.data_prep_mnt_path}'
 
   iamRoleStatements:
