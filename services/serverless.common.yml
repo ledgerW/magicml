@@ -3,6 +3,8 @@ custom:
 
   # Lambda Layers
   pythonRequirements:
+    useStaticCache: true
+    useDownloadCache: true
     dockerizePip: true
     layer:
       name: ${self:service}
