@@ -12,4 +12,4 @@ custom:
   clean_data_bucket: '${self:service}-clean-data.${self:custom.stage}'
 
   # EFS
-  data_prep_mnt_path: data_prep
+  data_prep_mnt_path: /data-prep
