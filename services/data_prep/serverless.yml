@@ -13,8 +13,10 @@ package:
     - tests/**
     - mocks/**
     - requirements.txt
+    - package-lock.json
+    - package.json
   include:
-    - ../libs/**
+    - ../../libs/**
 
 provider:
   name: aws
