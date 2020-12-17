@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  RawDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.raw_data_bucket}.${self:custom.stage}
+      # Set the CORS policy
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3000
+
+  CleanDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.clean_data_bucket}.${self:custom.stage}
+      # Set the CORS policy
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3000
+
+Outputs:
+  RawDataBucketArn:
+    Value:
+       Fn::GetAtt:
+        - RawDataBucket
+        - Arn
+    Export:
+      Name: ${self:custom.stage}-RawDataBucketArn
+
+  RawDataBucketName:
+    Value:
+      Ref: RawDataBucket
+    Export:
+      Name: ${self:custom.stage}-RawDataBucket
+
+  CleanDataBucketArn:
+    Value:
+       Fn::GetAtt:
+        - CleanDataBucket
+        - Arn
+    Export:
+      Name: ${self:custom.stage}-CleanDataBucketArn
+
+  CleanDataBucketName:
+    Value:
+      Ref: CleanDataBucket
+    Export:
+      Name: ${self:custom.stage}-CleanDataBucket

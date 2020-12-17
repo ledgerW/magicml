@@ -1,0 +1,34 @@
+name: magicml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - boto3
+  - aws-xray-sdk
+  - pandas
+  - numpy
+  - scikit-learn
+  - pyarrow
+  - python-dotenv
+  - ipywidgets
+  - matplotlib
+  - scipy
+  - requests
+  - pytest
+  - coverage
+  - plotly
+  - plotly_express
+  - stripe
+  - pip
+  - pip:
+    - tensorflow
+    - tensorflow-hub
+    - tensorflow-addons
+    - tensorflow-datasets
+    - tensorboard_plugin_profile
+    - keras-tuner
+    - sagemaker
+    - pyspark
+    - docker-compose
+    - mlflow

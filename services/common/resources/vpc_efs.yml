@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+# EFS Resources
+  # EFSA
+  fileSystemA:
+    Type: AWS::EFS::FileSystem
+  
+  mountTargetA:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref fileSystemA
+      SubnetId: !Ref privateSubnetA
+      SecurityGroups:
+        - !GetAtt privateVPC.DefaultSecurityGroup
+  
+  accessPointA: # data_prep Service Access Point
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref fileSystemA
+      PosixUser:
+        Uid: "1001"
+        Gid: "1001"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1001"
+          OwnerUid: "1001"
+          Permissions: "755"
+        Path: ${self:custom.data_prep_mnt_path}
+  
+  # Private VPC
+  privateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 172.16.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+  
+  publicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref privateVPC
+      AvailabilityZone:
+        Fn::Select:
+         - 0
+         - Fn::GetAZs: ""
+      CidrBlock: 172.16.0.0/20
+      MapPublicIpOnLaunch: true
+  
+  publicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref privateVPC
+  
+  publicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref publicSubnetA
+      RouteTableId: !Ref publicRouteTable
+  
+  s3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !Ref publicRouteTable
+      ServiceName: 'com.amazonaws.${self:provider.region}.s3'
+      VpcId: !Ref privateVPC
+
+  lambdaEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref publicSubnetA
+      SecurityGroupIds:
+        - !GetAtt privateVPC.DefaultSecurityGroup
+      ServiceName: 'com.amazonaws.${self:provider.region}.lambda'
+      VpcId: !Ref privateVPC
+
+Outputs:
+  privateVPCSecurityGroup:
+    Description: Default security for Lambda VPC
+    Value: !GetAtt privateVPC.DefaultSecurityGroup
+    Export:
+      Name: VPCSecGroupID-${self:custom.stage}
+  privateVPCID:
+    Description: VPC ID
+    Value: !Ref privateVPC
+    Export:
+      Name: VPCID-${self:custom.stage}
+  publicSubnetAID:
+    Description: Public Subnet A ID
+    Value: !Ref publicSubnetA
+    Export:
+      Name: VPCSubnetAID-${self:custom.stage}
+  fileSystemAId:
+    Description: File system ID
+    Value: !Ref fileSystemA
+    Export:
+      Name: EFSAID-${self:custom.stage}
+  mountTargetA:
+    Description: Mount point A ID
+    Value: !Ref mountTargetA
+    Export:
+      Name: MountTargetAID-${self:custom.stage}
+  accessPointAArn:
+    Description: Access point ARN
+    Value: !GetAtt accessPointA.Arn
+    Export:
+      Name: EFSAccessPointAARN-${self:custom.stage}

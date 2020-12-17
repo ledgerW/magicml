@@ -1,0 +1,15 @@
+custom:
+  stage: ${opt:stage, self:provider.stage}
+
+  # Lambda Layers
+  pythonRequirements:
+    dockerizePip: true
+    layer:
+      name: ${self:service}
+
+  #S3
+  raw_data_bucket: ${self:service}-raw_data
+  clean_data_bucket: ${self:service}-clean_data
+
+  # EFS
+  data_prep_mnt_path: data_prep

@@ -1,0 +1,15 @@
+service: magicml-common
+
+custom: ${file(../serverless.common.yml):custom}
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: us-east-1
+
+resources:
+  # S3
+  - ${file(resources/s3.yml)}
+  # VPC and EFS
+  - ${file(resources/vpc_efs.yml)}
