@@ -20,8 +20,8 @@ from libs.response_lib import success, failure
 #patch_all()
 
 MNT_PATH = os.getenv('EFS_MOUNT_PATH')
-RAW_BUCKET = os.getenv['RAW_BUCKET']
-CLEAN_BUCKET = os.getenv['CLEAN_BUCKET']
+RAW_BUCKET = os.getenv('RAW_BUCKET')
+CLEAN_BUCKET = os.getenv('CLEAN_BUCKET')
 LOCAL_RAW_PATH = '{}/raw'.format(MNT_PATH)
 LOCAL_CLEAN_PATH = '{}/clean'.format(MNT_PATH)
 
