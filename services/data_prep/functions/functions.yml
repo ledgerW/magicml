@@ -1,6 +1,6 @@
 cards_prep:
   handler: cards_prep.worker
-  memorySize: 10000
+  memorySize: 3000
   timeout: 900
   maximumRetryAttempts: 0
   layers:
@@ -8,9 +8,9 @@ cards_prep:
   events:
     - http:
         path: cards_prep
-        method: post
+        method: get
         cors: true
         authorizer: aws_iam
   fileSystemConfig:
-    localMountPath: '/mnt/${self:custom.data_prep_mnt_path}'
+    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
