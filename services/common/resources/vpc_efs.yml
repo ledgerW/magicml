@@ -9,7 +9,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref fileSystemA
-      SubnetId: !Ref privateSubnetA
+      SubnetId: !Ref publicSubnetA
       SecurityGroups:
         - !GetAtt privateVPC.DefaultSecurityGroup
   
