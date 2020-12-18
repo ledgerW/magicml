@@ -7,8 +7,10 @@ custom:
       name: ${self:service}
 
   #S3
-  raw_data_bucket: '${self:service}-raw-data.${self:custom.stage}'
-  clean_data_bucket: '${self:service}-clean-data.${self:custom.stage}'
+  raw_data_bucket: 'magicml-raw-data.${self:custom.stage}'
+  clean_data_bucket: 'magicml-clean-data.${self:custom.stage}'
+  models_bucket: 'magicml-models.${self:custom.stage}'
+  inference_bucket: 'magicml-inference.${self:custom.stage}'
 
   # EFS
   data_prep_mnt_path: /data-prep

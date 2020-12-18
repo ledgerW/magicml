@@ -1,0 +1,5 @@
+numpy
+pandas
+tensorflow
+tensorflow-hub
+aws-xray-sdk

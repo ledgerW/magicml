@@ -1,0 +1,67 @@
+service: magicml-similarity
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+  - serverless-python-requirements
+
+custom: ${file(../serverless.common.yml):custom}
+
+package:
+  individually: true
+  exclude:
+    - tests/**
+    - mocks/**
+    - requirements.txt
+    - package-lock.json
+    - package.json
+  include:
+    - ../../libs/**
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: us-east-1
+  useDotenv: true
+  profile: lw2134
+  vpc:
+    securityGroupIds:
+      - ${cf:magicml-common-${self:custom.stage}.privateVPCSecurityGroup}
+    subnetIds:
+      - ${cf:magicml-common-${self:custom.stage}.publicSubnetAID}
+  tracing:
+    apiGateway: true
+    lambda: true
+
+  environment:
+    STAGE: ${self:custom.stage}
+    RAW_BUCKET: ${self:custom.raw_data_bucket}
+    CLEAN_BUCKET: ${self:custom.clean_data_bucket}
+    MODELS_BUCKET: ${self:custom.models_bucket}
+    INFERENCE_BUCKET: ${self:custom.inference_bucket}
+    EFS_MOUNT_PATH: '/mnt${self:custom.data_prep_mnt_path}'
+
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:ListBucket'
+      Resource: '*'
+    - Effect: 'Allow'
+      Action:
+        # Lambda Actions
+        - 'lambda:InvokeFunction'
+        - 'lambda:InvokeAsync'
+        # S3 Actions
+        - 's3:PutObject'
+        - 's3:GetObject'
+        - 's3:DeleteObject'
+      Resource: '*'
+    - Effect: Allow
+      Action:
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+      Resource: '*'
+
+functions:
+  - ${file(functions/functions.yml)}

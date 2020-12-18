@@ -40,6 +40,46 @@ Resources:
               - HEAD
             MaxAge: 3000
 
+  ModelsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.models_bucket}
+      # Set the CORS policy
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3000
+
+  InferenceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.inference_bucket}
+      # Set the CORS policy
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3000
+
 Outputs:
   RawDataBucketArn:
     Value:
@@ -68,3 +108,31 @@ Outputs:
       Ref: CleanDataBucket
     Export:
       Name: ${self:custom.stage}-CleanDataBucket
+
+  ModelsBucketArn:
+    Value:
+       Fn::GetAtt:
+        - ModelsBucket
+        - Arn
+    Export:
+      Name: ${self:custom.stage}-ModelsBucketArn
+
+  ModelsBucketName:
+    Value:
+      Ref: ModelsBucket
+    Export:
+      Name: ${self:custom.stage}-ModelsBucket
+
+  InferenceBucketArn:
+    Value:
+       Fn::GetAtt:
+        - InferenceBucket
+        - Arn
+    Export:
+      Name: ${self:custom.stage}-InferenceBucketArn
+
+  InferenceBucketName:
+    Value:
+      Ref: InferenceBucket
+    Export:
+      Name: ${self:custom.stage}-InferenceBucket
