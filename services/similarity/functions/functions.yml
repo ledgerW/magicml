@@ -4,6 +4,7 @@ cards_prep:
   timeout: 900
   maximumRetryAttempts: 0
   layers:
+    - ${cf:magicml-data_prep-${self:custom.stage}.PythonRequirementsLambdaLayerQualifiedArn}
     - {Ref: PythonRequirementsLambdaLayer}
   events:
     - http:
