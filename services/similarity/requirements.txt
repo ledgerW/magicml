@@ -1,3 +1,2 @@
-tensorflow
 tensorflow-hub
 aws-xray-sdk

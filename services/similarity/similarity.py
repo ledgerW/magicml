@@ -9,7 +9,6 @@ import logging
 import boto3
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 import tensorflow_hub as hub
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
