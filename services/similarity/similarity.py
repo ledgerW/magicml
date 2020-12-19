@@ -50,7 +50,7 @@ def get_embeddings(event, context):
 
       # Get raw data from S3
       for s3_key in model_files:
-        local_path = LOCAL_MODEL_PATH + '/use-large/' + s3_key
+        local_path = LOCAL_MODEL_PATH + '/' + s3_key
         os.makedirs(pathlib.Path(local_path).parent, exist_ok=True)
         s3.download_file(MODELS_BUCKET, s3_key, local_path)
 
