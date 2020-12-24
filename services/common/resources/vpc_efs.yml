@@ -43,7 +43,7 @@ Resources:
         Fn::Select:
          - 0
          - Fn::GetAZs: ""
-      CidrBlock: 172.16.0.0/20
+      CidrBlock: 172.16.0.0/24
   
   privateRouteTable:
     Type: AWS::EC2::RouteTable
