@@ -7,11 +7,9 @@ import json
 import pathlib
 import logging
 import boto3
-import numpy as np
-import pandas as pd
-import tensorflow_hub as hub
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from boto3.session import Session
+import sagemaker
+from sagemaker.processing import ScriptProcessor, ProcessingInput, ProcessingOutput
 
 from libs.response_lib import success, failure
 
@@ -20,61 +18,118 @@ from libs.response_lib import success, failure
 #from aws_xray_sdk.core import patch_all
 #patch_all()
 
-MNT_PATH = os.getenv('EFS_MOUNT_PATH')
-RAW_BUCKET = os.getenv('RAW_BUCKET')
 CLEAN_BUCKET = os.getenv('CLEAN_BUCKET')
 MODELS_BUCKET = os.getenv('MODELS_BUCKET')
 INFERENCE_BUCKET = os.getenv('INFERENCE_BUCKET')
-LOCAL_RAW_PATH = '{}/raw'.format(MNT_PATH)
-LOCAL_CLEAN_PATH = '{}/clean'.format(MNT_PATH)
-LOCAL_MODEL_PATH = '{}/model'.format(MNT_PATH)
-LOCAL_SIM_PATH = '{}/similarity'.format(MNT_PATH)
 
 s3 = boto3.client('s3')
 
 
 def get_embeddings(event, context):
-    '''
-    '''
-    os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
+  '''
+  '''
+  MNT_PATH = 'opt/ml/processing'
+  LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
+  LOCAL_MODEL_PATH = '{}/model'.format(MNT_PATH)
+  LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
 
-    # Load mode from S3 if not already in EFS
-    if not os.path.exists(LOCAL_MODEL_PATH + '/use-large'):
-      res = s3.list_objects_v2(
-          Bucket=MODELS_BUCKET,
-          Prefix='use-large'
-      )
+  sagemaker_session = sagemaker.Session()
+  role = 'arn:aws:iam::553371509391:role/magicml-sagemaker'
+  image_uri = '763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:2.3.1-cpu-py37-ubuntu18.04'
 
-      model_files = [file['Key'] for file in res['Contents']]
+  model_bucket = MODELS_BUCKET
+  model_prefix = 'use-large'
+  model_data = 's3://{}/{}/model.tar.gz'.format(model_bucket, model_prefix)
 
-      # Get raw data from S3
-      for s3_key in model_files:
-        local_path = LOCAL_MODEL_PATH + '/' + s3_key
-        os.makedirs(pathlib.Path(local_path).parent, exist_ok=True)
-        s3.download_file(MODELS_BUCKET, s3_key, local_path)
+  input_bucket = CLEAN_BUCKET
+  input_prefix = 'cards'
+  input_data = 's3://{}/{}/cards.csv'.format(input_bucket, input_prefix)
+
+  output_bucket = INFERENCE_BUCKET
+  output_prefix = 'use-large'
+  output_data = 's3://{}/{}'.format(output_bucket, output_prefix)
+
+  tf_processor = ScriptProcessor(
+      sagemaker_session=sagemaker_session,
+      role=role,
+      image_uri=image_uri,
+      instance_type="ml.m5.2xlarge",
+      instance_count=1,
+      command=['python3', '-v'],
+      max_runtime_in_seconds=7200,
+      base_job_name='use-large-embeddings'
+  )
+
+  tf_processor.run(
+      code='src/process_embeddings.py',
+      inputs=[
+          ProcessingInput(
+              input_name='model',
+              source=model_data,
+              destination=LOCAL_MODEL_PATH
+          ),
+          ProcessingInput(
+              input_name='cards',
+              source=input_data,
+              destination=LOCAL_INPUT_PATH
+          )
+      ],
+      outputs=[
+          ProcessingOutput(
+              output_name='embeddings',
+              source=LOCAL_OUTPUT_PATH,
+              destination=output_data
+          )
+      ],
+      wait=False
+  )
+
+  return success({'status': True})
 
 
-    # Get all embeddings
-    cards_df = pd.read_csv(LOCAL_CLEAN_PATH + '/cards.csv')
+def stage_embeddings(event, context):
+  MNT_PATH = os.getenv('EFS_MOUNT_PATH')
+  LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
+  LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
+  CARD_EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.csv'
+  CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
+  SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
-    arena_df = cards_df.query('mtgArenaId.notnull()')\
-      .reset_index(drop=True)\
-      .fillna(value={'text': 'Blank'})
+  os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
-    arena_txt = list(arena_df.text)
-    arena_name = [(name + '-' + set_name).replace(' ','_') for name, set_name in zip(arena_df.name, arena_df.setCode)]
+  # Get embeddings and card data from S3
+  s3.download_file(OUTPUT_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
-    use_embed = hub.KerasLayer(LOCAL_MODEL_PATH + '/use-large')
+  # Get card embeddings matrix
+  embed_df = pd.read_csv(CARD_EMBEDDINGS_PATH)\
+    .rename(columns={'Unnamed: 0': 'Names'})
 
-    embeddings = use_embed(arena_txt)
+  # Get MTGJSON clean cards data
+  merge_cols = [
+    'Names','id','mtgArenaId','scryfallId','name','colorIdentity','colors','setName',
+    'convertedManaCost','manaCost','life','loyalty','power','toughness',
+    'type','types','subtypes','supertypes','text','purchaseUrls',
+    'brawl','commander','duel','future','historic','legacy','modern',
+    'oldschool','pauper','penny','pioneer','standard','vintage'
+  ]
 
-    corr = np.inner(embeddings, embeddings)
+  cards_df = pd.read_csv(CARD_DATA_PATH)\
+    .query('mtgArenaId.notnull()')\
+    .assign(Names=lambda df: df.name + '-' + df.setCode)\
+    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_')))\
+    [merge_cols]
 
-    pd.DataFrame(corr, columns=arena_name, index=arena_name)\
-      .to_csv(LOCAL_SIM_PATH + '/use_large_cards.csv')
-    
-    # Send embeddings to S3
-    for local_path in pathlib.Path(LOCAL_SIM_PATH).glob('*'):
-      s3.upload_file(str(local_path), INFERENCE_BUCKET, 'use-large/{}'.format(local_path.name))
+  # Sort, merge, and save each card locally
+  if 'n_cards' in event.keys():
+    n_cards = event['n_cards']
+  else:
+    n_cards = len(embed_df.columns)
 
-    return success({'status': True})
+  for card in embed_df.columns[1:n_cards]:
+    embed_df[['Names', card]]\
+        .merge(cards_df, how='left', on='Names')\
+        .sort_values(by=card, ascending=False)\
+        .to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
+
+  return success({'status': True})

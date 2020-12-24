@@ -17,6 +17,7 @@ package:
     - package.json
   include:
     - ../../libs/**
+    - src/**
 
 provider:
   name: aws
@@ -56,6 +57,8 @@ provider:
         - 's3:PutObject'
         - 's3:GetObject'
         - 's3:DeleteObject'
+        # Sagemaker Actions
+        - 'sagemaker:*'
       Resource: '*'
     - Effect: Allow
       Action:

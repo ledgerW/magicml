@@ -1,2 +1,3 @@
-tensorflow-hub
+pandas
+sagemaker
 aws-xray-sdk

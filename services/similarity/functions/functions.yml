@@ -1,15 +1,31 @@
-cards_prep:
+get_embeddings:
   handler: similarity.get_embeddings
-  memorySize: 10000
+  memorySize: 256
   timeout: 900
   maximumRetryAttempts: 0
   layers:
-    - ${cf:magicml-data-prep-${self:custom.stage}.PythonRequirementsLambdaLayerQualifiedArn}
     - {Ref: PythonRequirementsLambdaLayer}
   events:
     - http:
         path: get_embeddings
         method: get
+        cors: true
+        authorizer: aws_iam
+  fileSystemConfig:
+    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
+    arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
+
+stage_embeddings:
+  handler: similarity.stage_embeddings
+  memorySize: 10000
+  timeout: 900
+  maximumRetryAttempts: 0
+  layers:
+    - {Ref: PythonRequirementsLambdaLayer}
+  events:
+    - http:
+        path: stage_embeddings
+        method: post
         cors: true
         authorizer: aws_iam
   fileSystemConfig:

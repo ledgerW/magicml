@@ -23,6 +23,8 @@ data/
 .ipynb_checkpoints
 notebooks/tfhub*
 models/
+notebooks/*.csv
+notebooks/*/*.csv
 
 # Dependency directories
 node_modules
