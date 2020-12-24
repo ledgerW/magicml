@@ -31,7 +31,7 @@ Resources:
   privateVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 172.16.0.0/16
+      CidrBlock: 10.16.0.0/16
       EnableDnsSupport: 'true'
       EnableDnsHostnames: 'true'
   
@@ -43,7 +43,7 @@ Resources:
         Fn::Select:
          - 0
          - Fn::GetAZs: ""
-      CidrBlock: 172.16.0.0/24
+      CidrBlock: 10.16.0.0/20
   
   privateRouteTable:
     Type: AWS::EC2::RouteTable
