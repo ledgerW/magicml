@@ -32,8 +32,9 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.16.0.0/16
-      EnableDnsSupport: 'true'
-      EnableDnsHostnames: 'true'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
   
   privateSubnetA:
     Type: AWS::EC2::Subnet
@@ -60,7 +61,10 @@ Resources:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
         VpcId: !Ref privateVPC
-        GroupDescription: 'Security group for VPC Lambdas'
+        GroupDescription: 'sg for VPC Lambda with EFS Mount'
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "0.0.0.0/0"
 
   vpcEndpointSecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
