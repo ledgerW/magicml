@@ -11,7 +11,7 @@ Resources:
       FileSystemId: !Ref fileSystemA
       SubnetId: !Ref privateSubnetA
       SecurityGroups:
-        - !GetAtt privateVPC.DefaultSecurityGroup
+        - !GetAtt vpcEndpointLambdaSecurityGroup.GroupId
   
   accessPointA: # data_prep Service Access Point
     Type: AWS::EFS::AccessPoint
