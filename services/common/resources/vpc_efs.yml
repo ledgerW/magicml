@@ -117,7 +117,7 @@ Resources:
 Outputs:
   privateVPCSecurityGroup:
     Description: Default security for Lambda VPC
-    Value: !GetAtt privateVPC.DefaultSecurityGroup
+    Value: !GetAtt vpcEndpointLambdaSecurityGroup.GroupId
     Export:
       Name: VPCSecGroupID-${self:custom.stage}
   privateVPCID:
