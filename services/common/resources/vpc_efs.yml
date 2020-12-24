@@ -76,6 +76,28 @@ Resources:
       ServiceName: 'com.amazonaws.${self:provider.region}.lambda'
       VpcId: !Ref privateVPC
 
+  sagemakerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref publicSubnetA
+      SecurityGroupIds:
+        - !GetAtt privateVPC.DefaultSecurityGroup
+      ServiceName: 'com.amazonaws.${self:provider.region}.sagemaker.api'
+      VpcId: !Ref privateVPC
+
+  stsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref publicSubnetA
+      SecurityGroupIds:
+        - !GetAtt privateVPC.DefaultSecurityGroup
+      ServiceName: 'com.amazonaws.${self:provider.region}.sts'
+      VpcId: !Ref privateVPC
+
 Outputs:
   privateVPCSecurityGroup:
     Description: Default security for Lambda VPC

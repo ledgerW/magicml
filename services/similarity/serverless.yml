@@ -59,6 +59,8 @@ provider:
         - 's3:DeleteObject'
         # Sagemaker Actions
         - 'sagemaker:*'
+        # IAM Actions
+        - 'iam:*'
       Resource: '*'
     - Effect: Allow
       Action:
