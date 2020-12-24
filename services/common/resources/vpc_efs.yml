@@ -32,8 +32,8 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.16.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
       InstanceTenancy: default
   
   privateSubnetA:
