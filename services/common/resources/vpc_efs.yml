@@ -60,11 +60,13 @@ Resources:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
         VpcId: !Ref privateVPC
+        GroupDescription: 'Security group for VPC Lambdas'
 
   vpcEndpointSecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
         VpcId: !Ref privateVPC
+        GroupDescription: 'Security group for VPC Interface Endpoints'
         SecurityGroupIngress:
           - IpProtocol: tcp
             FromPort: 443
