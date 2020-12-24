@@ -65,6 +65,9 @@ Resources:
         SecurityGroupEgress:
           - IpProtocol: -1
             CidrIp: "0.0.0.0/0"
+        SecurityGroupIngress:
+          - IpProtocol: -1
+            CidrIp: "0.0.0.0/0"
 
   vpcEndpointSecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
