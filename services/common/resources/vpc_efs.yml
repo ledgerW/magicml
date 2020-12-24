@@ -9,7 +9,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref fileSystemA
-      SubnetId: !Ref publicSubnetA
+      SubnetId: !Ref privateSubnetA
       SecurityGroups:
         - !GetAtt privateVPC.DefaultSecurityGroup
   
@@ -35,7 +35,7 @@ Resources:
       EnableDnsSupport: 'true'
       EnableDnsHostnames: 'true'
   
-  publicSubnetA:
+  privateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref privateVPC
@@ -44,35 +44,58 @@ Resources:
          - 0
          - Fn::GetAZs: ""
       CidrBlock: 172.16.0.0/20
-      MapPublicIpOnLaunch: true
   
-  publicRouteTable:
+  privateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref privateVPC
   
-  publicSubnetARouteTableAssociation:
+  privateSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref publicSubnetA
-      RouteTableId: !Ref publicRouteTable
+      SubnetId: !Ref privateSubnetA
+      RouteTableId: !Ref privateRouteTable
+
+  vpcEndpointLambdaSecurityGroup:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !Ref privateVPC
+
+  vpcEndpointSecurityGroup:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !Ref privateVPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            SourceSecurityGroupId: !GetAtt vpcEndpointLambdaSecurityGroup.GroupId
   
   s3Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       RouteTableIds:
-        - !Ref publicRouteTable
+        - !Ref privateRouteTable
       ServiceName: 'com.amazonaws.${self:provider.region}.s3'
+      VpcId: !Ref privateVPC
+
+  dynamoEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !Ref privateRouteTable
+      ServiceName: 'com.amazonaws.${self:provider.region}.dynamodb'
       VpcId: !Ref privateVPC
 
   lambdaEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       VpcEndpointType: Interface
+      PrivateDnsEnabled: True
+      SecurityGroupIds: 
+        - !GetAtt vpcEndpointSecurityGroup.GroupId
       SubnetIds:
-        - !Ref publicSubnetA
-      SecurityGroupIds:
-        - !GetAtt privateVPC.DefaultSecurityGroup
+        - !Ref privateSubnetA
       ServiceName: 'com.amazonaws.${self:provider.region}.lambda'
       VpcId: !Ref privateVPC
 
@@ -80,23 +103,14 @@ Resources:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       VpcEndpointType: Interface
+      PrivateDnsEnabled: True
+      SecurityGroupIds: 
+        - !GetAtt vpcEndpointSecurityGroup.GroupId
       SubnetIds:
-        - !Ref publicSubnetA
-      SecurityGroupIds:
-        - !GetAtt privateVPC.DefaultSecurityGroup
+        - !Ref privateSubnetA
       ServiceName: 'com.amazonaws.${self:provider.region}.sagemaker.api'
       VpcId: !Ref privateVPC
 
-  stsEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcEndpointType: Interface
-      SubnetIds:
-        - !Ref publicSubnetA
-      SecurityGroupIds:
-        - !GetAtt privateVPC.DefaultSecurityGroup
-      ServiceName: 'com.amazonaws.${self:provider.region}.sts'
-      VpcId: !Ref privateVPC
 
 Outputs:
   privateVPCSecurityGroup:
@@ -109,9 +123,9 @@ Outputs:
     Value: !Ref privateVPC
     Export:
       Name: VPCID-${self:custom.stage}
-  publicSubnetAID:
-    Description: Public Subnet A ID
-    Value: !Ref publicSubnetA
+  privateSubnetAID:
+    Description: Private Subnet A ID
+    Value: !Ref privateSubnetA
     Export:
       Name: VPCSubnetAID-${self:custom.stage}
   fileSystemAId:

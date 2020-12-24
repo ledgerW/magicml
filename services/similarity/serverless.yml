@@ -61,6 +61,10 @@ provider:
         - 'sagemaker:*'
         # IAM Actions
         - 'iam:*'
+        # EC2 Actions
+        - 'ec2:*'
+        # STS Actions
+        - 'sts:*'
       Resource: '*'
     - Effect: Allow
       Action:
