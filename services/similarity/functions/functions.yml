@@ -15,16 +15,33 @@ get_embeddings:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
 
-stage_embeddings:
-  handler: similarity.stage_embeddings
-  memorySize: 10000
+stage_embed_master:
+  handler: similarity.stage_embed_master
+  memorySize: 1500
   timeout: 900
   maximumRetryAttempts: 0
   layers:
     - {Ref: PythonRequirementsLambdaLayer}
   events:
     - http:
-        path: stage_embeddings
+        path: stage_embed_master
+        method: post
+        cors: true
+        authorizer: aws_iam
+  fileSystemConfig:
+    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
+    arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
+
+stage_embed_worker:
+  handler: similarity.stage_embed_worker
+  memorySize: 3000
+  timeout: 900
+  maximumRetryAttempts: 0
+  layers:
+    - {Ref: PythonRequirementsLambdaLayer}
+  events:
+    - http:
+        path: stage_embed_worker
         method: post
         cors: true
         authorizer: aws_iam

@@ -24,6 +24,7 @@ SM_ROLE = os.getenv('SM_ROLE')
 
 s3 = boto3.client('s3')
 sm = boto3.client('sagemaker')
+lambda_client = boto3.client('lambda')
 
 
 def get_embeddings(event, context):
@@ -123,7 +124,11 @@ def get_embeddings(event, context):
   return success({'status': True})
 
 
-def stage_embeddings(event, context):
+def stage_embed_master(event, context):
+  '''
+  event['n_cards']: number of cards to batch and send to worker
+  event['batch_size']: number of cards for each worker to handle
+  '''
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
@@ -136,8 +141,46 @@ def stage_embeddings(event, context):
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
-  s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+  if not os.path.exists(CARD_EMBEDDINGS_PATH):
+    s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  if not os.path.exists(CARD_DATA_PATH):
+    s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+
+  # Get card embeddings matrix
+  all_cards = pd.read_csv(CARD_EMBEDDINGS_PATH)\
+    .rename(columns={'Unnamed: 0': 'Names'})\
+    .columns
+
+  if event['n_cards'] > 0:
+    n_cards = event['n_cards']
+    all_cards = all_cards[0:n_cards]
+
+  BATCH_SIZE = event['batch_size']
+  batches = [list(all_cards[n:n+BATCHES_OF]) for n in range(1, len(all_cards), BATCH_SIZE)]
+
+  # Sort, merge, and save each card locally
+  for cards in batches:
+    payload = {'cards': cards}
+
+    res = lambda_client.invoke(
+        FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
+        InvocationType='Event',
+        Payload=json.dumps(payload)
+    )
+
+  return success({'status': True})
+
+
+def stage_embed_worker(event, context):
+  '''
+  event['cards']: list of card names to handle
+  '''
+  MNT_PATH = os.getenv('EFS_MOUNT_PATH')
+  LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
+  LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
+  CARD_EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.csv'
+  CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
+  SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
   # Get card embeddings matrix
   embed_df = pd.read_csv(CARD_EMBEDDINGS_PATH)\
@@ -158,16 +201,19 @@ def stage_embeddings(event, context):
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
     [merge_cols]
 
-  # Sort, merge, and save each card locally
-  if 'n_cards' in event.keys():
-    n_cards = event['n_cards']
-  else:
-    n_cards = len(embed_df.columns)
-
-  for card in embed_df.columns[1:n_cards]:
-    embed_df[['Names', card]]\
+  # Sort, merge, save cards in EFS and Dynamo
+  cards = event['cards']
+  for card in cards:
+    staged_card = embed_df[['Names', card]]\
         .merge(cards_df, how='left', on='Names')\
-        .sort_values(by=card, ascending=False)\
-        .to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
+        .sort_values(by=card, ascending=False)
+    
+    # Write to EFS
+    staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
+
+    # Write to Dyanmo
+    #staged_card.to_dict()
+
+  print(os.listdir(SORTED_CARD_PATH))
 
   return success({'status': True})
