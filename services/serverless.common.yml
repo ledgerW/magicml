@@ -11,6 +11,7 @@ custom:
   clean_data_bucket: 'magicml-clean-data.${self:custom.stage}'
   models_bucket: 'magicml-models.${self:custom.stage}'
   inference_bucket: 'magicml-inference.${self:custom.stage}'
+  src_bucket: 'magicml-src.${self:custom.stage}'
 
   # EFS
   data_prep_mnt_path: /data-prep

@@ -13,3 +13,5 @@ resources:
   - ${file(resources/s3.yml)}
   # VPC and EFS
   - ${file(resources/vpc_efs.yml)}
+  # IAM
+  - ${file(resources/iam.yml)}
