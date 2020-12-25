@@ -41,7 +41,9 @@ provider:
     CLEAN_BUCKET: ${self:custom.clean_data_bucket}
     MODELS_BUCKET: ${self:custom.models_bucket}
     INFERENCE_BUCKET: ${self:custom.inference_bucket}
+    SOURCE_BUCKET: ${self:custom.src_bucket}
     EFS_MOUNT_PATH: '/mnt${self:custom.data_prep_mnt_path}'
+    SM_ROLE: ${cf:magicml-common-${self:custom.stage}.SagemakerRoleARN}
 
   iamRoleStatements:
     - Effect: 'Allow'

@@ -7,9 +7,7 @@ import json
 import pathlib
 import logging
 import boto3
-from boto3.session import Session
-import sagemaker
-from sagemaker.processing import ScriptProcessor, ProcessingInput, ProcessingOutput
+import pandas as pd
 
 from libs.response_lib import success, failure
 
@@ -20,9 +18,12 @@ from libs.response_lib import success, failure
 
 CLEAN_BUCKET = os.getenv('CLEAN_BUCKET')
 MODELS_BUCKET = os.getenv('MODELS_BUCKET')
+SRC_BUCKET = os.getenv('SOURCE_BUCKET')
 INFERENCE_BUCKET = os.getenv('INFERENCE_BUCKET')
+SM_ROLE = os.getenv('SM_ROLE')
 
 s3 = boto3.client('s3')
+sm = boto3.client('sagemaker')
 
 
 def get_embeddings(event, context):
@@ -31,57 +32,92 @@ def get_embeddings(event, context):
   MNT_PATH = 'opt/ml/processing'
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_MODEL_PATH = '{}/model'.format(MNT_PATH)
+  LOCAL_CODE_PATH = '{}/input/code'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
 
-  sagemaker_session = sagemaker.Session()
-  role = 'arn:aws:iam::553371509391:role/magicml-sagemaker'
   image_uri = '763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:2.3.1-cpu-py37-ubuntu18.04'
 
-  model_bucket = MODELS_BUCKET
   model_prefix = 'use-large'
-  model_data = 's3://{}/{}/model.tar.gz'.format(model_bucket, model_prefix)
+  model_data = 's3://{}/{}/model.tar.gz'.format(MODELS_BUCKET, model_prefix)
 
-  input_bucket = CLEAN_BUCKET
   input_prefix = 'cards'
-  input_data = 's3://{}/{}/cards.csv'.format(input_bucket, input_prefix)
+  input_data = 's3://{}/{}/cards.csv'.format(CLEAN_BUCKET, input_prefix)
 
-  output_bucket = INFERENCE_BUCKET
+  src_prefix = 'sm_processing'
+  src_code = 's3://{}/{}/process_embeddings.py'.format(SRC_BUCKET, src_prefix)
+
   output_prefix = 'use-large'
-  output_data = 's3://{}/{}'.format(output_bucket, output_prefix)
+  output_data = 's3://{}/{}'.format(INFERENCE_BUCKET, output_prefix)
 
-  tf_processor = ScriptProcessor(
-      sagemaker_session=sagemaker_session,
-      role=role,
-      image_uri=image_uri,
-      instance_type="ml.m5.2xlarge",
-      instance_count=1,
-      command=['python3', '-v'],
-      max_runtime_in_seconds=7200,
-      base_job_name='use-large-embeddings'
-  )
+  s3.upload_file('src/process_embeddings.py', SRC_BUCKET, 'sm_processing/process_embeddings.py')
 
-  tf_processor.run(
-      code='src/process_embeddings.py',
-      inputs=[
-          ProcessingInput(
-              input_name='model',
-              source=model_data,
-              destination=LOCAL_MODEL_PATH
-          ),
-          ProcessingInput(
-              input_name='cards',
-              source=input_data,
-              destination=LOCAL_INPUT_PATH
-          )
-      ],
-      outputs=[
-          ProcessingOutput(
-              output_name='embeddings',
-              source=LOCAL_OUTPUT_PATH,
-              destination=output_data
-          )
-      ],
-      wait=False
+  now = datetime.datetime.now().strftime(format='%Y-%d-%m-%H-%M-%S')
+
+  sm.create_processing_job(
+    ProcessingJobName='use-large-embeddings-{}'.format(now),
+    RoleArn=SM_ROLE,
+    StoppingCondition={
+        'MaxRuntimeInSeconds': 7200
+    },
+    AppSpecification={
+        'ImageUri': image_uri,
+        'ContainerEntrypoint': [
+            'python3',
+            '-v',
+            (LOCAL_CODE_PATH + '/process_embeddings.py')
+        ]
+    },
+    ProcessingResources={
+        'ClusterConfig': {
+            'InstanceCount': 1,
+            'InstanceType': 'ml.m5.2xlarge',
+            'VolumeSizeInGB': 30
+        }
+    },
+    ProcessingInputs=[
+        {
+            'InputName': 'model',
+            'S3Input': {
+                'S3Uri': model_data,
+                'LocalPath': LOCAL_MODEL_PATH,
+                'S3DataType': 'S3Prefix',
+                'S3InputMode': 'File',
+                'S3DataDistributionType': 'FullyReplicated'
+            }
+        },
+        {
+            'InputName': 'cards',
+            'S3Input': {
+                'S3Uri': input_data,
+                'LocalPath': LOCAL_INPUT_PATH,
+                'S3DataType': 'S3Prefix',
+                'S3InputMode': 'File',
+                'S3DataDistributionType': 'FullyReplicated',
+            }
+        },
+        {
+            'InputName': 'code',
+            'S3Input': {
+                'S3Uri': src_code,
+                'LocalPath': LOCAL_CODE_PATH,
+                'S3DataType': 'S3Prefix',
+                'S3InputMode': 'File',
+                'S3DataDistributionType': 'FullyReplicated'
+            }
+        }
+    ],
+    ProcessingOutputConfig={
+        'Outputs': [
+            {
+                'OutputName': 'embeddings',
+                'S3Output': {
+                    'S3Uri': output_data,
+                    'LocalPath': LOCAL_OUTPUT_PATH,
+                    'S3UploadMode': 'EndOfJob'
+                }
+            }
+        ]
+    }
   )
 
   return success({'status': True})
