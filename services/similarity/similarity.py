@@ -5,7 +5,7 @@ sys.setrecursionlimit(100000)
 import os
 import json
 import pathlib
-import logging
+import datetime
 import boto3
 import pandas as pd
 
@@ -29,7 +29,7 @@ sm = boto3.client('sagemaker')
 def get_embeddings(event, context):
   '''
   '''
-  MNT_PATH = 'opt/ml/processing'
+  MNT_PATH = '/opt/ml/processing'
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_MODEL_PATH = '{}/model'.format(MNT_PATH)
   LOCAL_CODE_PATH = '{}/input/code'.format(MNT_PATH)
@@ -131,10 +131,12 @@ def stage_embeddings(event, context):
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
+  os.makedirs(LOCAL_INPUT_PATH, exist_ok=True)
+  os.makedirs(LOCAL_OUTPUT_PATH, exist_ok=True)
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  s3.download_file(OUTPUT_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # Get card embeddings matrix
@@ -153,7 +155,7 @@ def stage_embeddings(event, context):
   cards_df = pd.read_csv(CARD_DATA_PATH)\
     .query('mtgArenaId.notnull()')\
     .assign(Names=lambda df: df.name + '-' + df.setCode)\
-    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_')))\
+    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
     [merge_cols]
 
   # Sort, merge, and save each card locally

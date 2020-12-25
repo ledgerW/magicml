@@ -27,7 +27,9 @@ if __name__=="__main__":
       .fillna(value={'text': 'Blank'})
 
     arena_txt = list(arena_df.text)
-    arena_name = [(name + '-' + set_name).replace(' ','_') for name, set_name in zip(arena_df.name, arena_df.setCode)]
+    arena_name = [
+      (name + '-' + set_name).replace(' ','_').replace('//', 'II') for name, set_name in zip(arena_df.name, arena_df.setCode)
+    ]
 
     model_path = LOCAL_MODEL_PATH + '/model.tar.gz'
     print('Extracting model from path: {}'.format(model_path))
