@@ -44,6 +44,7 @@ provider:
     SOURCE_BUCKET: ${self:custom.src_bucket}
     EFS_MOUNT_PATH: '/mnt${self:custom.data_prep_mnt_path}'
     SM_ROLE: ${cf:magicml-common-${self:custom.stage}.SagemakerRoleARN}
+    SIMILARITY_TABLE: ${self:custom.similarity_table}
 
   iamRoleStatements:
     - Effect: 'Allow'
@@ -61,6 +62,15 @@ provider:
         - 's3:DeleteObject'
         # Sagemaker Actions
         - 'sagemaker:*'
+        # DynamoDb Actions
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchGetItem
         # IAM Actions
         - 'iam:*'
         # EC2 Actions

@@ -15,3 +15,5 @@ resources:
   - ${file(resources/vpc_efs.yml)}
   # IAM
   - ${file(resources/iam.yml)}
+  # DynamoDB
+  - ${file(resources/dynamodb.yml)}

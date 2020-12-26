@@ -6,9 +6,11 @@ import os
 import json
 import pathlib
 import datetime
+from time import sleep
 import boto3
 import pandas as pd
 
+import libs.dynamodb_lib as dynamodb_lib
 from libs.response_lib import success, failure
 
 # AWS X-Ray Tracing
@@ -21,6 +23,7 @@ MODELS_BUCKET = os.getenv('MODELS_BUCKET')
 SRC_BUCKET = os.getenv('SOURCE_BUCKET')
 INFERENCE_BUCKET = os.getenv('INFERENCE_BUCKET')
 SM_ROLE = os.getenv('SM_ROLE')
+SIMILARITY_TABLE = os.getenv('SIMILARITY_TABLE')
 
 s3 = boto3.client('s3')
 sm = boto3.client('sagemaker')
@@ -160,7 +163,7 @@ def stage_embed_master(event, context):
 
   # Sort, merge, and save each card locally
   for cards in batches:
-    payload = {'cards': cards}
+    payload = {'cards': json.dumps(cards)}
 
     res = lambda_client.invoke(
         FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
@@ -188,31 +191,45 @@ def stage_embed_worker(event, context):
 
   # Get MTGJSON clean cards data
   merge_cols = [
-    'Names','id','mtgArenaId','scryfallId','name','colorIdentity','colors','setName',
-    'convertedManaCost','manaCost','life','loyalty','power','toughness',
-    'type','types','subtypes','supertypes','text','purchaseUrls',
+    'Names','id','mtgArenaId','scryfallId','name','colors','setName',
+    'convertedManaCost','manaCost','loyalty','power','toughness',
+    'type','types','subtypes','text',
     'brawl','commander','duel','future','historic','legacy','modern',
     'oldschool','pauper','penny','pioneer','standard','vintage'
-  ]
+]
 
   cards_df = pd.read_csv(CARD_DATA_PATH)\
     .query('mtgArenaId.notnull()')\
     .assign(Names=lambda df: df.name + '-' + df.setCode)\
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
+    .fillna({'loyalty':0, 'power':0, 'toughness':0})\
     [merge_cols]
 
   # Sort, merge, save cards in EFS and Dynamo
-  cards = event['cards']
+  cards = json.loads(event['cards'])
   for card in cards:
     staged_card = embed_df[['Names', card]]\
         .merge(cards_df, how='left', on='Names')\
-        .sort_values(by=card, ascending=False)
+        .sort_values(by=card, ascending=False)\
+        .head(50)\
+        .rename(columns={card: 'similarity'})\
+        .assign(id=lambda df: df.id.astype('int'))\
+        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('int'))\
+        .assign(loyalty=lambda df: df.loyalty.astype('int'))\
+        .assign(power=lambda df: df.power.astype('int'))\
+        .assign(toughness=lambda df: df.toughness.astype('int'))\
+        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('int'))
     
     # Write to EFS
     staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
 
     # Write to Dyanmo
-    #staged_card.to_dict()
+    staged_card_dict = staged_card.to_dict(orient='records')
+    Item = staged_card_dict[0]
+    Item['similarities'] = staged_card_dict[1:]
+
+    _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
+    sleep(0.1)
 
   print(os.listdir(SORTED_CARD_PATH))
 

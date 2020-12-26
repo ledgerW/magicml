@@ -15,3 +15,6 @@ custom:
 
   # EFS
   data_prep_mnt_path: /data-prep
+
+  # DynamoDB
+  similarity_table: 'similarity-${self:custom.stage}'
