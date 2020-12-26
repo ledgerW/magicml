@@ -163,7 +163,7 @@ def stage_embed_master(event, context):
 
   # Sort, merge, and save each card locally
   for cards in batches:
-    payload = {'cards': json.dumps(cards)}
+    payload = {'cards': cards}
 
     res = lambda_client.invoke(
         FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
@@ -206,7 +206,7 @@ def stage_embed_worker(event, context):
     [merge_cols]
 
   # Sort, merge, save cards in EFS and Dynamo
-  cards = json.loads(event['cards'])
+  cards = event['cards']
   for card in cards:
     staged_card = embed_df[['Names', card]]\
         .merge(cards_df, how='left', on='Names')\

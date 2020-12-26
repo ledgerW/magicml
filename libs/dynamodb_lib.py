@@ -1,9 +1,9 @@
 import boto3
 import os
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch
+#from aws_xray_sdk.core import xray_recorder
+#from aws_xray_sdk.core import patch
 
-patch(['boto3'])
+#patch(['boto3'])
 
 def call(table, action, params):
     # check if running local for dev/testing
@@ -16,26 +16,20 @@ def call(table, action, params):
 
     table = dynamodb.Table(table)
 
-    try:
-        xray_recorder.begin_subsegment(action)
-        if action == 'put_item':
-            return getattr(table, action)(Item=params)
-        elif action == 'get_item' or action == 'delete_item':
-            return getattr(table, action)(Key=params)
-        elif action == 'query':
-            return getattr(table, action)(KeyConditionExpression=params['KeyConditionExpression'])
-        elif action == 'update_item':
-            return getattr(table, action)(Key=params['Key'],
-                                          UpdateExpression=params['UpdateExpression'],
-                                          ExpressionAttributeValues=params['ExpressionAttributeValues'],
-                                          ReturnValues=params['ReturnValues'])
-        elif action == 'batch_write_item':
-            return getattr(client, action)(RequestItems=params)
-    except Exception as e:
-        e = sys.exc_info()[0]
-        logger.info(page)
-        logger.info(e)
-        xray_recorder.end_subsegment()
+    #xray_recorder.begin_subsegment(action)
+    if action == 'put_item':
+        return getattr(table, action)(Item=params)
+    elif action == 'get_item' or action == 'delete_item':
+        return getattr(table, action)(Key=params)
+    elif action == 'query':
+        return getattr(table, action)(KeyConditionExpression=params['KeyConditionExpression'])
+    elif action == 'update_item':
+        return getattr(table, action)(Key=params['Key'],
+                                        UpdateExpression=params['UpdateExpression'],
+                                        ExpressionAttributeValues=params['ExpressionAttributeValues'],
+                                        ReturnValues=params['ReturnValues'])
+    elif action == 'batch_write_item':
+        return getattr(client, action)(RequestItems=params)
 
 
 def batch_format(val):
