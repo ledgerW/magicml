@@ -5,15 +5,9 @@ Resources:
     Properties:
       TableName: ${self:custom.similarity_table}
       AttributeDefinitions:
-        - AttributeName: Names
-          AttributeType: S
-        - AttributeName: name
-          AttributeType: S
         - AttributeName: scryfallId
           AttributeType: S
-        - AttributeName: id
-          AttributeType: N
-        - AttributeName: setName
+        - AttributeName: name
           AttributeType: S
       KeySchema:
         - AttributeName: scryfallId
