@@ -1,0 +1,16 @@
+query:
+  handler: api.query
+  memorySize: 256
+  timeout: 900
+  maximumRetryAttempts: 0
+  layers:
+    - {Ref: PythonRequirementsLambdaLayer}
+  events:
+    - http:
+        path: query
+        method: post
+        cors: true
+        authorizer: aws_iam
+  fileSystemConfig:
+    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
+    arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}

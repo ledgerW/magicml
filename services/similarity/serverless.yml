@@ -85,4 +85,5 @@ provider:
       Resource: '*'
 
 functions:
-  - ${file(functions/functions.yml)}
+  - ${file(functions/similarity.yml)}
+  - ${file(functions/api.yml)}
