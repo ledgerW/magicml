@@ -4,6 +4,7 @@ sys.setrecursionlimit(100000)
 
 import os
 import json
+from decimal import Decimal
 import pathlib
 import datetime
 from time import sleep
@@ -213,6 +214,7 @@ def stage_embed_worker(event, context):
         .sort_values(by=card, ascending=False)\
         .head(50)\
         .rename(columns={card: 'similarity'})\
+        .assign(similarity=lambda df: df.similarity.astype('str'))\
         .assign(id=lambda df: df.id.astype('int'))\
         .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('int'))\
         .assign(loyalty=lambda df: df.loyalty.astype('int'))\
@@ -226,7 +228,7 @@ def stage_embed_worker(event, context):
     # Write to Dyanmo
     staged_card_dict = staged_card.to_dict(orient='records')
     Item = staged_card_dict[0]
-    Item['similarities'] = staged_card_dict[1:]
+    Item['similarities'] = json.dumps(staged_card_dict[1:])
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
     sleep(0.1)
