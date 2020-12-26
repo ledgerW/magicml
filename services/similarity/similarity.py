@@ -19,6 +19,7 @@ from libs.response_lib import success, failure
 #from aws_xray_sdk.core import patch_all
 #patch_all()
 
+STAGE = os.getenv('STAGE')
 CLEAN_BUCKET = os.getenv('CLEAN_BUCKET')
 MODELS_BUCKET = os.getenv('MODELS_BUCKET')
 SRC_BUCKET = os.getenv('SOURCE_BUCKET')
@@ -160,7 +161,7 @@ def stage_embed_master(event, context):
     all_cards = all_cards[0:n_cards]
 
   BATCH_SIZE = event['batch_size']
-  batches = [list(all_cards[n:n+BATCHES_OF]) for n in range(1, len(all_cards), BATCH_SIZE)]
+  batches = [list(all_cards[n:n+BATCH_SIZE]) for n in range(1, len(all_cards), BATCH_SIZE)]
 
   # Sort, merge, and save each card locally
   for cards in batches:
@@ -203,7 +204,7 @@ def stage_embed_worker(event, context):
     .query('mtgArenaId.notnull()')\
     .assign(Names=lambda df: df.name + '-' + df.setCode)\
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
-    .fillna({'loyalty':0, 'power':0, 'toughness':0})\
+    .fillna('0')\
     [merge_cols]
 
   # Sort, merge, save cards in EFS and Dynamo
@@ -217,10 +218,10 @@ def stage_embed_worker(event, context):
         .assign(similarity=lambda df: df.similarity.astype('str'))\
         .assign(id=lambda df: df.id.astype('int'))\
         .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('int'))\
-        .assign(loyalty=lambda df: df.loyalty.astype('int'))\
-        .assign(power=lambda df: df.power.astype('int'))\
-        .assign(toughness=lambda df: df.toughness.astype('int'))\
-        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('int'))
+        .assign(loyalty=lambda df: df.loyalty.astype('str'))\
+        .assign(power=lambda df: df.power.astype('str'))\
+        .assign(toughness=lambda df: df.toughness.astype('str'))\
+        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))
     
     # Write to EFS
     staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
@@ -231,7 +232,7 @@ def stage_embed_worker(event, context):
     Item['similarities'] = json.dumps(staged_card_dict[1:])
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
-    sleep(0.1)
+    sleep(1)
 
   print(os.listdir(SORTED_CARD_PATH))
 
