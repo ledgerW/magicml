@@ -216,8 +216,8 @@ def stage_embed_worker(event, context):
         .head(50)\
         .rename(columns={card: 'similarity'})\
         .assign(similarity=lambda df: df.similarity.astype('str'))\
-        .assign(id=lambda df: df.id.astype('int'))\
-        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('int'))\
+        .assign(id=lambda df: df.id.astype('str'))\
+        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
         .assign(loyalty=lambda df: df.loyalty.astype('str'))\
         .assign(power=lambda df: df.power.astype('str'))\
         .assign(toughness=lambda df: df.toughness.astype('str'))\
@@ -229,11 +229,10 @@ def stage_embed_worker(event, context):
     # Write to Dyanmo
     staged_card_dict = staged_card.to_dict(orient='records')
     Item = staged_card_dict[0]
-    Item['similarities'] = json.dumps(staged_card_dict[1:])
+    #Item['similarities'] = json.dumps(staged_card_dict[1:])
+    Item['similarities'] = staged_card_dict[1:]
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
     sleep(1)
-
-  print(os.listdir(SORTED_CARD_PATH))
 
   return success({'status': True})

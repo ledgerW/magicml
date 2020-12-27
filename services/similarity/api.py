@@ -33,6 +33,7 @@ def query(event, context):
   if key == 'scryfallId':
     Item = {key: value}
     cards = dynamodb_lib.call(SIMILARITY_TABLE, 'get_item', Item)
+    cards = cards['Item']
   elif key == 'name':
     Item = {
       'Table': SIMILARITY_TABLE,
@@ -40,6 +41,7 @@ def query(event, context):
       'Item': Key(key).eq(value)
     }
     cards = dynamodb_lib.call(SIMILARITY_TABLE, 'query', Item)
+    cards = cards['Items']
   
   return success({'cards': cards})
 
