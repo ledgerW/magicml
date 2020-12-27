@@ -28,22 +28,40 @@ LOCAL_CLEAN_PATH = '{}/clean'.format(MNT_PATH)
 s3 = boto3.client('s3')
 
 
+def get_image_uris(row):
+    try:
+        if pd.notna(row['image_uris']):
+            return row['image_uris']
+        else:
+            return [card['image_uris'] for card in row['card_faces']]
+    except:
+        return 'Blank'
+
+
 def worker(event, context):
     '''
     '''
     os.makedirs(LOCAL_CLEAN_PATH, exist_ok=True)
     os.makedirs(LOCAL_RAW_PATH, exist_ok=True)
 
+    # Get MTGJSON data
     res = s3.list_objects_v2(
         Bucket=RAW_BUCKET,
         Prefix='mtgjson'
     )
-
     card_files = [file['Key'] for file in res['Contents'] if '/decks/' not in file['Key']]
-
-    # Get raw data from S3
     for s3_key in card_files:
       local_path = LOCAL_RAW_PATH + '/' + s3_key.split('/')[-1]
+      s3.download_file(RAW_BUCKET, s3_key, local_path)
+
+    # Get Scryfall data
+    res = s3.list_objects_v2(
+        Bucket=RAW_BUCKET,
+        Prefix='scryfall'
+    )
+    card_files = [file['Key'] for file in res['Contents'] if 'cards.json' in file['Key']]
+    for s3_key in card_files:
+      local_path = LOCAL_RAW_PATH + '/' + 'scryfall_cards.json'
       s3.download_file(RAW_BUCKET, s3_key, local_path)
 
     # Clean data
@@ -63,6 +81,17 @@ def worker(event, context):
 
     cards_df = cards_df\
       .merge(legs_df, how='left', on='uuid')
+
+    scryfall_df = pd.read_json(LOCAL_RAW_PATH + '/scryfall_cards.json')\
+        .query('arena_id.notnull()')\
+        [['id','image_uris','card_faces']]\
+        .reset_index(drop=True)\
+        .assign(image_urls=lambda df: df.apply(get_image_uris, axis=1))\
+        .drop(columns=['image_uris','card_faces'])\
+        .rename(columns={'id': 'scryfallId'})
+
+    cards_df = cards_df\
+      .merge(scryfall_df, how='left', on='scryfallId')
 
     cards_df.to_csv(LOCAL_CLEAN_PATH + '/cards.csv', index=False)
     

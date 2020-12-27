@@ -5,17 +5,25 @@ Resources:
     Properties:
       TableName: ${self:custom.similarity_table}
       AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
         - AttributeName: scryfallId
           AttributeType: S
         - AttributeName: name
           AttributeType: S
       KeySchema:
-        - AttributeName: scryfallId
+        - AttributeName: id
           KeyType: HASH
       GlobalSecondaryIndexes:
         - IndexName: name-index
           KeySchema:
           - AttributeName: name
+            KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: scryfall-index
+          KeySchema:
+          - AttributeName: scryfallId
             KeyType: HASH
           Projection:
             ProjectionType: ALL

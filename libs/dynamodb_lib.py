@@ -28,10 +28,12 @@ def call(table, action, params):
             KeyConditionExpression=params['Item']
             )
     elif action == 'update_item':
-        return getattr(table, action)(Key=params['Key'],
-                                        UpdateExpression=params['UpdateExpression'],
-                                        ExpressionAttributeValues=params['ExpressionAttributeValues'],
-                                        ReturnValues=params['ReturnValues'])
+        return getattr(table, action)(
+            Key=params['Key'],
+            UpdateExpression=params['UpdateExpression'],
+            ExpressionAttributeValues=params['ExpressionAttributeValues'],
+            ReturnValues=params['ReturnValues']
+        )
     elif action == 'batch_write_item':
         return getattr(client, action)(RequestItems=params)
 

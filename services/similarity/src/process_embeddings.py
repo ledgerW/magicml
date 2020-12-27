@@ -28,7 +28,7 @@ if __name__=="__main__":
 
     arena_txt = list(arena_df.text)
     arena_name = [
-      (name + '-' + set_name).replace(' ','_').replace('//', 'II') for name, set_name in zip(arena_df.name, arena_df.setCode)
+      (name + '-' + str(id_val)).replace(' ','_').replace('//', 'II') for name, id_val in zip(arena_df.name, arena_df.id)
     ]
 
     model_path = LOCAL_MODEL_PATH + '/model.tar.gz'

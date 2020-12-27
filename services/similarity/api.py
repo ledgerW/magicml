@@ -27,13 +27,27 @@ def query(event, context):
   event['key']: what index/attribute to search by
   event['value']: the value of the search attribute
   '''
-  key = event['key']
-  value = event['value']
+  print(event)
 
-  if key == 'scryfallId':
+  try:
+    key = event['key']
+    value = event['value']
+  except:
+    key = json.loads(event['body'])['key']
+    value = json.loads(event['body'])['value']
+
+  if key == 'id':
     Item = {key: value}
     cards = dynamodb_lib.call(SIMILARITY_TABLE, 'get_item', Item)
     cards = cards['Item']
+  elif key == 'scryfallId':
+    Item = {
+      'Table': SIMILARITY_TABLE,
+      'Index': 'scryfall-index',
+      'Item': Key(key).eq(value)
+    }
+    cards = dynamodb_lib.call(SIMILARITY_TABLE, 'query', Item)
+    cards = cards['Items']
   elif key == 'name':
     Item = {
       'Table': SIMILARITY_TABLE,

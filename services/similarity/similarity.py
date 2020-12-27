@@ -146,15 +146,16 @@ def stage_embed_master(event, context):
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  if not os.path.exists(CARD_EMBEDDINGS_PATH):
-    s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
-  if not os.path.exists(CARD_DATA_PATH):
-    s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # Get card embeddings matrix
   all_cards = pd.read_csv(CARD_EMBEDDINGS_PATH)\
     .rename(columns={'Unnamed: 0': 'Names'})\
     .columns
+
+  print(len(all_cards))
+  print(len(all_cards.nunique()))
 
   if event['n_cards'] > 0:
     n_cards = event['n_cards']
@@ -172,6 +173,7 @@ def stage_embed_master(event, context):
         InvocationType='Event',
         Payload=json.dumps(payload)
     )
+    sleep(0.1)
 
   return success({'status': True})
 
@@ -195,14 +197,14 @@ def stage_embed_worker(event, context):
   merge_cols = [
     'Names','id','mtgArenaId','scryfallId','name','colors','setName',
     'convertedManaCost','manaCost','loyalty','power','toughness',
-    'type','types','subtypes','text',
+    'type','types','subtypes','text','image_urls',
     'brawl','commander','duel','future','historic','legacy','modern',
     'oldschool','pauper','penny','pioneer','standard','vintage'
 ]
 
   cards_df = pd.read_csv(CARD_DATA_PATH)\
     .query('mtgArenaId.notnull()')\
-    .assign(Names=lambda df: df.name + '-' + df.setCode)\
+    .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
     .fillna('0')\
     [merge_cols]
@@ -213,7 +215,7 @@ def stage_embed_worker(event, context):
     staged_card = embed_df[['Names', card]]\
         .merge(cards_df, how='left', on='Names')\
         .sort_values(by=card, ascending=False)\
-        .head(50)\
+        .head(51)\
         .rename(columns={card: 'similarity'})\
         .assign(similarity=lambda df: df.similarity.astype('str'))\
         .assign(id=lambda df: df.id.astype('str'))\
