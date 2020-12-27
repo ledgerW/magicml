@@ -1,4 +1,4 @@
 {
-  "n_cards": 100,
-  "batch_size": 10
+  "n_cards": -1,
+  "batch_size": 100
 }

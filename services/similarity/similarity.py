@@ -155,7 +155,7 @@ def stage_embed_master(event, context):
     .columns
 
   print(len(all_cards))
-  print(len(all_cards.nunique()))
+  print(all_cards.nunique())
 
   if event['n_cards'] > 0:
     n_cards = event['n_cards']

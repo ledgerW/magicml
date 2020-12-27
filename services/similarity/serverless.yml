@@ -87,3 +87,7 @@ provider:
 functions:
   - ${file(functions/similarity.yml)}
   - ${file(functions/api.yml)}
+
+resources:
+  # DynamoDB
+  - ${file(resources/dynamodb.yml)}
