@@ -229,10 +229,8 @@ def stage_embed_worker(event, context):
     staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
 
     # Write to Dyanmo
-    staged_card_dict = staged_card.to_dict(orient='records')
-    Item = staged_card_dict[0]
-    #Item['similarities'] = json.dumps(staged_card_dict[1:])
-    Item['similarities'] = staged_card_dict[1:]
+    Item = staged_card.query('Names == @card').to_dict(orient='records')[0]
+    Item['similarities'] = staged_card.query('Names != @card').to_dict(orient='records')
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
     sleep(1)
