@@ -23,8 +23,6 @@ def call(table, action, params):
         return getattr(table, action)(Key=params)
     elif action == 'query':
         return getattr(table, action)(
-            TableName=params['Table'],
-            IndexName=params['Index'],
             KeyConditionExpression=params['Item']
             )
     elif action == 'update_item':

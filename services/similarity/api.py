@@ -36,26 +36,11 @@ def query(event, context):
     key = json.loads(event['body'])['key']
     value = json.loads(event['body'])['value']
 
-  if key == 'id':
-    Item = {key: value}
-    cards = dynamodb_lib.call(SIMILARITY_TABLE, 'get_item', Item)
-    cards = cards['Item']
-  elif key == 'scryfallId':
-    Item = {
-      'Table': SIMILARITY_TABLE,
-      'Index': 'scryfall-index',
-      'Item': Key(key).eq(value)
-    }
-    cards = dynamodb_lib.call(SIMILARITY_TABLE, 'query', Item)
-    cards = cards['Items']
-  elif key == 'name':
-    Item = {
-      'Table': SIMILARITY_TABLE,
-      'Index': 'name-index',
-      'Item': Key(key).eq(value)
-    }
-    cards = dynamodb_lib.call(SIMILARITY_TABLE, 'query', Item)
-    cards = cards['Items']
+  params = {
+    'Item': Key(key).eq(value)
+  }
+  cards = dynamodb_lib.call(SIMILARITY_TABLE, 'query', params)
+  cards = cards['Items']
   
   return success({'cards': cards})
 
