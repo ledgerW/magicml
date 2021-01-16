@@ -1,5 +1,6 @@
 import sys
 sys.path.append('..')
+sys.path.append('../..')
 sys.setrecursionlimit(100000)
 
 import os
@@ -31,10 +32,10 @@ def query(event, context):
 
   try:
     key = event['key']
-    value = event['value']
+    value = event['value'].replace('__','//')
   except:
     key = json.loads(event['body'])['key']
-    value = json.loads(event['body'])['value']
+    value = json.loads(event['body'])['value'].replace('__','//')
 
   params = {
     'Item': Key(key).eq(value)
