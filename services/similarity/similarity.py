@@ -213,23 +213,36 @@ def stage_embed_worker(event, context):
   cards = event['cards']
   for card in cards:
     staged_card = embed_df[['Names', card]]\
-        .merge(cards_df, how='left', on='Names')\
-        .sort_values(by=card, ascending=False)\
-        .head(51)\
-        .rename(columns={card: 'similarity'})\
-        .assign(similarity=lambda df: df.similarity.astype('str'))\
-        .assign(id=lambda df: df.id.astype('str'))\
-        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
-        .assign(loyalty=lambda df: df.loyalty.astype('str'))\
-        .assign(power=lambda df: df.power.astype('str'))\
-        .assign(toughness=lambda df: df.toughness.astype('str'))\
-        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))
+      .merge(cards_df, how='left', on='Names')
+
+    # Item (this card) to be stored in Dynamo
+    Item = staged_card.query('Names == @card')\
+      .rename(columns={card: 'similarity'})\
+      .assign(similarity=lambda df: df.similarity.astype('str'))\
+      .assign(id=lambda df: df.id.astype('str'))\
+      .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
+      .assign(loyalty=lambda df: df.loyalty.astype('str'))\
+      .assign(power=lambda df: df.power.astype('str'))\
+      .assign(toughness=lambda df: df.toughness.astype('str'))\
+      .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))\
+      .to_dict(orient='records')[0]
+
+    staged_card = staged_card\
+      .sort_values(by=card, ascending=False)\
+      .head(51)\
+      .rename(columns={card: 'similarity'})\
+      .assign(similarity=lambda df: df.similarity.astype('str'))\
+      .assign(id=lambda df: df.id.astype('str'))\
+      .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
+      .assign(loyalty=lambda df: df.loyalty.astype('str'))\
+      .assign(power=lambda df: df.power.astype('str'))\
+      .assign(toughness=lambda df: df.toughness.astype('str'))\
+      .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))
     
     # Write to EFS
     staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
 
     # Write to Dyanmo
-    Item = staged_card.query('Names == @card').to_dict(orient='records')[0]
     Item['similarities'] = staged_card.query('Names != @card').to_dict(orient='records')
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
