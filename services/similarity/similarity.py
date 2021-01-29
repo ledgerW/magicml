@@ -203,7 +203,7 @@ def stage_embed_worker(event, context):
 ]
 
   cards_df = pd.read_csv(CARD_DATA_PATH)\
-    .query('mtgArenaId.notnull()')\
+    .query('setName == "Kaldheim" or mtgArenaId.notnull()')\
     .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
     .fillna('0')\

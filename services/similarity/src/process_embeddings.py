@@ -22,7 +22,7 @@ if __name__=="__main__":
     # Get all embeddings
     cards_df = pd.read_csv(LOCAL_INPUT_PATH + '/cards.csv')
 
-    arena_df = cards_df.query('mtgArenaId.notnull()')\
+    arena_df = cards_df.query('setName == "Kaldheim" or mtgArenaId.notnull()')\
       .reset_index(drop=True)\
       .fillna(value={'text': 'Blank'})
 
