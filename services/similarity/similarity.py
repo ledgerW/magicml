@@ -146,7 +146,7 @@ def stage_embed_master(event, context):
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  s3.download_file(INFERENCE_BUCKET, 'use-large/arena_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CARD_EMBEDDINGS_PATH)
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # Get card embeddings matrix
@@ -203,7 +203,6 @@ def stage_embed_worker(event, context):
 ]
 
   cards_df = pd.read_csv(CARD_DATA_PATH)\
-    .query('setName == "Kaldheim" or mtgArenaId.notnull()')\
     .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
     .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
     .fillna('0')\
