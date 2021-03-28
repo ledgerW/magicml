@@ -6,13 +6,8 @@ import os
 #patch(['boto3'])
 
 def call(table, action, params):
-    # check if running local for dev/testing
-    if os.getenv('IS_LOCAL'):
-        dynamodb = boto3.resource('dynamodb', region_name='localhost', endpoint_url='http://localhost:8000')
-        client = boto3.client('dynamodb', region_name='localhost', endpoint_url='http://localhost:8000')
-    else:
-        dynamodb = boto3.resource('dynamodb')
-        client = boto3.client('dynamodb')
+    dynamodb = boto3.resource('dynamodb')
+    client = boto3.client('dynamodb')
 
     table = dynamodb.Table(table)
 
