@@ -1,5 +1,5 @@
-query:
-  handler: api.query
+card_query:
+  handler: api.card_query
   memorySize: 256
   timeout: 900
   maximumRetryAttempts: 0
@@ -7,7 +7,27 @@ query:
     - {Ref: PythonRequirementsLambdaLayer}
   events:
     - http:
-        path: query
+        path: card_query
+        method: post
+        cors: true
+  fileSystemConfig:
+    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
+    arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
+free_text_query:
+  image:
+    name: tf_image
+    command:
+      - api.free_text_query
+    entryPoint:
+      - '/lambda-entrypoint.sh'
+  memorySize: 3000
+  timeout: 60
+  maximumRetryAttempts: 0
+  environment:
+      CONTAINER_ENV: 'True'
+  events:
+    - http:
+        path: free_text_query
         method: post
         cors: true
   fileSystemConfig:

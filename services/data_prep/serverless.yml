@@ -16,7 +16,7 @@ package:
     - package-lock.json
     - package.json
   include:
-    - ../../libs/**
+    - ../libs/**
 
 provider:
   name: aws

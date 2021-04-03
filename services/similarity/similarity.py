@@ -137,7 +137,8 @@ def stage_embed_master(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
-  CARD_EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.csv'
+  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
+  EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
@@ -146,11 +147,12 @@ def stage_embed_master(event, context):
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CARD_EMBEDDINGS_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # Get card embeddings matrix
-  all_cards = pd.read_csv(CARD_EMBEDDINGS_PATH)\
+  all_cards = pd.read_csv(CORR_MATRIX_PATH)\
     .rename(columns={'Unnamed: 0': 'Names'})\
     .columns
 
@@ -185,12 +187,13 @@ def stage_embed_worker(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
-  CARD_EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.csv'
+  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
+  EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
   # Get card embeddings matrix
-  embed_df = pd.read_csv(CARD_EMBEDDINGS_PATH)\
+  embed_df = pd.read_csv(CORR_MATRIX_PATH)\
     .rename(columns={'Unnamed: 0': 'Names'})
 
   # Get MTGJSON clean cards data
@@ -200,7 +203,7 @@ def stage_embed_worker(event, context):
     'type','types','subtypes','text','image_urls',
     'brawl','commander','duel','future','historic','legacy','modern',
     'oldschool','pauper','penny','pioneer','standard','vintage'
-]
+  ]
 
   cards_df = pd.read_csv(CARD_DATA_PATH)\
     .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
@@ -241,7 +244,7 @@ def stage_embed_worker(event, context):
     # Write to EFS
     staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
 
-    # Write to Dyanmo
+    # Write to Dyanmo (exclude this card from it's own similarities)
     Item['similarities'] = staged_card.query('Names != @card').to_dict(orient='records')
 
     _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)

@@ -16,7 +16,7 @@ package:
     - package-lock.json
     - package.json
   include:
-    - ../../libs/**
+    - ../libs/**
     - src/**
 
 provider:
@@ -26,6 +26,12 @@ provider:
   region: us-east-1
   useDotenv: true
   profile: lw2134
+  lambdaHashingVersion: 20201221
+  ecr:
+    images:
+      tf_image:
+        path: ../
+        file: Dockerfile
   vpc:
     securityGroupIds:
       - ${cf:magicml-common-${self:custom.stage}.privateVPCSecurityGroup}

@@ -38,6 +38,7 @@ if __name__=="__main__":
   use_embed = tf.saved_model.load('1')
 
   embeddings = use_embed(cards_txt)
+  np.save(LOCAL_OUTPUT_PATH + '/embeddings.npy', embeddings)
 
   corr = np.inner(embeddings, embeddings)
 
