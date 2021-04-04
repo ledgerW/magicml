@@ -1,0 +1,54 @@
+service: magicml-ecr-offline
+
+plugins:
+  - serverless-dotenv-plugin
+
+custom: ${file(../serverless.common.yml):custom}
+
+package:
+  individually: true
+  exclude:
+    - package-lock.json
+    - package.json
+  include:
+    - ../libs/**
+
+provider:
+  name: aws
+  stage: dev
+  region: us-east-1
+  useDotenv: true
+  profile: lw2134
+  lambdaHashingVersion: 20201221
+  ecr:
+    images:
+      tf_image:
+        path: ../
+        file: Dockerfile
+  vpc:
+    securityGroupIds:
+      - ${cf:magicml-common-${self:custom.stage}.privateVPCSecurityGroup}
+    subnetIds:
+      - ${cf:magicml-common-${self:custom.stage}.privateSubnetAID}
+
+functions:
+  dummy:
+    image:
+      name: tf_image
+      command:
+        - api.dummy
+      entryPoint:
+        - '/lambda-entrypoint.sh'
+    memorySize: 256
+    timeout: 60
+    maximumRetryAttempts: 0
+    environment:
+        CONTAINER_ENV: 'True'
+    events:
+      - http:
+          path: dummy
+          method: post
+          cors: true
+    fileSystemConfig:
+      localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
+      arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}

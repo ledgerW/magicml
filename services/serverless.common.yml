@@ -18,3 +18,6 @@ custom:
 
   # DynamoDB
   similarity_table: 'similarity-${self:custom.stage}'
+
+  # ECR
+  tf_image: '553371509391.dkr.ecr.us-east-1.amazonaws.com/serverless-magicml-ecr-offline-${self:custom.stage}:tf_image@sha256:26ea650053df5b962a4d8ff51d2bfa2f0bc296d46cc24fe621b080c2204f77c2'

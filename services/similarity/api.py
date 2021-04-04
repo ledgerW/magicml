@@ -16,6 +16,9 @@ if os.getenv('CONTAINER_ENV'):
   import pandas as pd
   import tensorflow as tf
 
+  # Load model
+  use_embed = tf.saved_model.load('models/use-large/1')
+
 # AWS X-Ray Tracing
 #from aws_xray_sdk.core import xray_recorder
 #from aws_xray_sdk.core import patch_all
@@ -66,9 +69,6 @@ def free_text_query(event, context):
     query = event['query']
   except:
     query = json.loads(event['body'])['query']
-
-  # Load model
-  use_embed = tf.saved_model.load('models/use-large/1')
 
   # Load card embeddings and names
   all_embeds = np.load(EMBEDDINGS_PATH)
