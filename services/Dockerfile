@@ -36,7 +36,7 @@ RUN pip uninstall -y pillow && CC="cc -mavx2" pip install -U --force-reinstall p
 # Copy lambda handlers and any libs
 COPY similarity/api.py ./
 RUN mkdir libs
-COPY libs/dynamodb_lib.py ./libs
+COPY libs ./libs
 
 # Preload a tfhub model if we want
 RUN mkdir -p models/use-large/1

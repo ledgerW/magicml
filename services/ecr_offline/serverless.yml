@@ -1,8 +1,5 @@
 service: magicml-ecr-offline
 
-plugins:
-  - serverless-dotenv-plugin
-
 custom: ${file(../serverless.common.yml):custom}
 
 package:
@@ -25,11 +22,6 @@ provider:
       tf_image:
         path: ../
         file: Dockerfile
-  vpc:
-    securityGroupIds:
-      - ${cf:magicml-common-${self:custom.stage}.privateVPCSecurityGroup}
-    subnetIds:
-      - ${cf:magicml-common-${self:custom.stage}.privateSubnetAID}
 
 functions:
   dummy:
@@ -49,6 +41,3 @@ functions:
           path: dummy
           method: post
           cors: true
-    fileSystemConfig:
-      localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
-      arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
