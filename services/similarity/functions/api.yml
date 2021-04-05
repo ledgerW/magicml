@@ -20,8 +20,8 @@ free_text_query:
       - api.free_text_query
     entryPoint:
       - '/lambda-entrypoint.sh'
-  memorySize: 3000
-  timeout: 60
+  memorySize: 5000
+  timeout: 120
   maximumRetryAttempts: 0
   environment:
       CONTAINER_ENV: 'True'

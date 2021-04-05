@@ -10,15 +10,6 @@ from boto3.dynamodb.conditions import Key
 import libs.dynamodb_lib as dynamodb_lib
 from libs.response_lib import success, failure
 
-# Load only if in Docker Lambda Environment
-if os.getenv('CONTAINER_ENV'):
-  import numpy as np
-  import pandas as pd
-  import tensorflow as tf
-
-  # Load model
-  use_embed = tf.saved_model.load('models/use-large/1')
-
 # AWS X-Ray Tracing
 #from aws_xray_sdk.core import xray_recorder
 #from aws_xray_sdk.core import patch_all
@@ -34,6 +25,40 @@ MNT_PATH = os.getenv('EFS_MOUNT_PATH')
 LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
 CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
+
+print(os.listdir())
+
+# Load only if in Docker Lambda Environment
+if os.getenv('CONTAINER_ENV'):
+  import numpy as np
+  import pandas as pd
+  import tensorflow as tf
+
+  # Load model
+  print('loading USE')
+  use_embed = tf.saved_model.load('models/use-large/1')
+
+  # Load card embeddings and names
+  print('loading embeddings')
+  all_embeds = np.load(EMBEDDINGS_PATH)
+
+  print('loading cards data')
+  merge_cols = [
+    'Names','id','mtgArenaId','scryfallId','name','colors','setName',
+    'convertedManaCost','manaCost','loyalty','power','toughness',
+    'type','types','subtypes','text','image_urls',
+    'brawl','commander','duel','future','historic','legacy','modern',
+    'oldschool','pauper','penny','pioneer','standard','vintage'
+  ]
+  cards_df = pd.read_csv(CARD_DATA_PATH)\
+    .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
+    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
+    .fillna('0')\
+    [merge_cols]
+
+  card_names = [
+  (name + '-' + str(id_val)).replace(' ','_').replace('//', 'II') for name, id_val in zip(cards_df.name, cards_df.id)
+  ]
 
 
 def card_query(event, context):
@@ -69,26 +94,6 @@ def free_text_query(event, context):
     query = event['query']
   except:
     query = json.loads(event['body'])['query']
-
-  # Load card embeddings and names
-  all_embeds = np.load(EMBEDDINGS_PATH)
-
-  merge_cols = [
-    'Names','id','mtgArenaId','scryfallId','name','colors','setName',
-    'convertedManaCost','manaCost','loyalty','power','toughness',
-    'type','types','subtypes','text','image_urls',
-    'brawl','commander','duel','future','historic','legacy','modern',
-    'oldschool','pauper','penny','pioneer','standard','vintage'
-  ]
-  cards_df = pd.read_csv('cardsS3.csv')\
-    .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
-    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
-    .fillna('0')\
-    [merge_cols]
-
-  card_names = [
-  (name + '-' + str(id_val)).replace(' ','_').replace('//', 'II') for name, id_val in zip(cards_df.name, cards_df.id)
-  ]
 
   # Get query embedding
   embed_query = use_embed(query)
