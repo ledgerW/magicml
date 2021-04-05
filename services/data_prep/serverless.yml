@@ -25,6 +25,7 @@ provider:
   region: us-east-1
   useDotenv: true
   profile: lw2134
+  lambdaHashingVersion: 20201221
   vpc:
     securityGroupIds:
       - ${cf:magicml-common-${self:custom.stage}.privateVPCSecurityGroup}

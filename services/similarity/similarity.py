@@ -175,7 +175,7 @@ def stage_embed_master(event, context):
         InvocationType='Event',
         Payload=json.dumps(payload)
     )
-    sleep(0.1)
+    sleep(0.2)
 
   return success({'status': True})
 
