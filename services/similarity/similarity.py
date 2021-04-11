@@ -137,6 +137,9 @@ def stage_embed_master(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
+  LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
+  USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
+  USE_PATH = LOCAL_MODEL_PATH + '/1'
   CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
@@ -145,11 +148,17 @@ def stage_embed_master(event, context):
   os.makedirs(LOCAL_INPUT_PATH, exist_ok=True)
   os.makedirs(LOCAL_OUTPUT_PATH, exist_ok=True)
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
+  os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
+  s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
   s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH)
   s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+
+  # untar model
+  os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
+  os.system('rm -r {}'.format(USE_TAR_PATH))
 
   # Get card embeddings matrix
   all_cards = pd.read_csv(CORR_MATRIX_PATH)\

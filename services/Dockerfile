@@ -39,13 +39,10 @@ RUN mkdir libs
 COPY libs ./libs
 
 # Preload a tfhub model if we want
-RUN mkdir -p models/use-large/1
-RUN curl -L https://tfhub.dev/google/universal-sentence-encoder-large/5?tf-hub-format=compressed -o ./models/use.tar.gz
-RUN tar -xf models/use.tar.gz -C models/use-large/1
-RUN rm -r models/use.tar.gz
-
-# Download ImageNet labels
-#RUN curl https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt -o ./model/ImageNetLabels.txt
+#RUN mkdir -p models/use-large/1
+#RUN curl -L https://tfhub.dev/google/universal-sentence-encoder-large/5?tf-hub-format=compressed -o ./models/use.tar.gz
+#RUN tar -xf models/use.tar.gz -C models/use-large/1
+#RUN rm -r models/use.tar.gz
 
 # Set the CMD to your handler
 CMD ["api.free_text_query"]

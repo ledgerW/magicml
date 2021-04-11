@@ -25,6 +25,8 @@ MNT_PATH = os.getenv('EFS_MOUNT_PATH')
 LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
 CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
+LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
+USE_PATH = LOCAL_MODEL_PATH + '/1'
 
 print(os.listdir())
 
@@ -36,7 +38,7 @@ if os.getenv('CONTAINER_ENV'):
 
   # Load model
   print('loading USE')
-  use_embed = tf.saved_model.load('models/use-large/1')
+  use_embed = tf.saved_model.load(USE_PATH)
 
   # Load card embeddings and names
   print('loading embeddings')
@@ -101,7 +103,7 @@ def free_text_query(event, context):
   # Get similar cards
   sims = np.inner(all_embeds, embed_query)
 
-  sims_list = pd.DataFrame(sims, columns=['free_text_query'], index=cards_name)\
+  sims_list = pd.DataFrame(sims, columns=['free_text_query'], index=card_names)\
     .sort_values(by='free_text_query', ascending=False)\
     .head(50)\
     .reset_index()\
