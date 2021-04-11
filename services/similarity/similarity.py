@@ -149,6 +149,7 @@ def stage_embed_master(event, context):
   os.makedirs(LOCAL_OUTPUT_PATH, exist_ok=True)
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
   os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
+  os.makedirs(USE_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
   s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
