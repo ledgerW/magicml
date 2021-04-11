@@ -39,9 +39,8 @@ if os.getenv('CONTAINER_ENV'):
   # Load model
   print('loading USE')
   print(USE_PATH)
-  print(os.listdir(LOCAL_MODEL_PATH))
   print(os.listdir(USE_PATH))
-  use_embed = tf.saved_model.load(USE_PATH)
+  use_embed = tf.saved_model.load((USE_PATH+'/1'))
 
   # Load card embeddings and names
   print('loading embeddings')
