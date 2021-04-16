@@ -1,4 +1,5 @@
 supported_sets = [
+  'Strixhaven',
   'Throne of Eldraine',
   'Theros Beyond Death',
   'Ikoria: Lair of Behemoths',
