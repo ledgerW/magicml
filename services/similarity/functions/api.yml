@@ -10,6 +10,14 @@ card_query:
         path: card_query
         method: post
         cors: true
+    - schedule:
+        name: card_query_warmup
+        description: 'keep card query api warm'
+        rate: rate(10 minutes)
+        enabled: true
+        input:
+          key: "name"
+          value: "Audacious Thief"
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
@@ -30,6 +38,13 @@ free_text_query:
         path: free_text_query
         method: post
         cors: true
+    - schedule:
+        name: free_text_warmup
+        description: 'keep free text api warm'
+        rate: rate(10 minutes)
+        enabled: true
+        input:
+          query: ["warming up"]
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
