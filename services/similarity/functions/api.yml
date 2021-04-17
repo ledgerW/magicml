@@ -11,7 +11,7 @@ card_query:
         method: post
         cors: true
     - schedule:
-        name: card_query_warmup
+        name: card_query_warmup-${self:custom.stage}
         description: 'keep card query api warm'
         rate: rate(10 minutes)
         enabled: true
@@ -39,7 +39,7 @@ free_text_query:
         method: post
         cors: true
     - schedule:
-        name: free_text_warmup
+        name: free_text_warmup-${self:custom.stage}
         description: 'keep free text api warm'
         rate: rate(10 minutes)
         enabled: true
