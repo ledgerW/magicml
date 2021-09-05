@@ -31,4 +31,4 @@ dependencies:
     - sagemaker
     - pyspark
     - docker-compose
-    - mlflow
+    - transformers[tf-cpu]

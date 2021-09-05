@@ -1,4 +1,5 @@
 supported_sets = [
+  'Forgotten Realms',
   'Strixhaven',
   'Throne of Eldraine',
   'Theros Beyond Death',
