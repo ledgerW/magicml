@@ -1,3 +1,4 @@
+frameworkVersion: "1.83.3"
 service: magicml-common
 
 custom: ${file(../serverless.common.yml):custom}

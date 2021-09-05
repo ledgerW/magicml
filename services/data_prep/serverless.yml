@@ -1,3 +1,4 @@
+frameworkVersion: "2.33.1"
 service: magicml-data-prep
 
 plugins:
