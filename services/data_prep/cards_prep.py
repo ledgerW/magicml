@@ -79,7 +79,7 @@ def worker(event, context):
 
     # Merge with legalities / formats data
     legs_df = pd.read_csv(LOCAL_RAW_PATH + '/legalities.csv')\
-      .reset_index(drop=True)\
+      .drop_duplicates(subset=['uuid','format','status'])\
       .pivot(index='uuid', columns='format', values='status')\
       .reset_index()\
       .fillna('Blank')
