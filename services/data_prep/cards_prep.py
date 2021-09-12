@@ -52,6 +52,7 @@ def worker(event, context):
     )
     card_files = [file['Key'] for file in res['Contents'] if '/decks/' not in file['Key']]
     for s3_key in card_files:
+      print(s3_key)
       local_path = LOCAL_RAW_PATH + '/' + s3_key.split('/')[-1]
       s3.download_file(RAW_BUCKET, s3_key, local_path)
 
@@ -62,6 +63,7 @@ def worker(event, context):
     )
     card_files = [file['Key'] for file in res['Contents'] if 'cards.json' in file['Key']]
     for s3_key in card_files:
+      print(s3_key)
       local_path = LOCAL_RAW_PATH + '/' + 'scryfall_cards.json'
       s3.download_file(RAW_BUCKET, s3_key, local_path)
 

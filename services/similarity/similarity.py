@@ -152,14 +152,35 @@ def stage_embed_master(event, context):
   os.makedirs(USE_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
-  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH)
-  s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
-  s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+  download_tasks = [
+    [MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH],
+    [INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH],
+    [INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH],
+    [CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH]
+  ]
+  for task in download_tasks:
+    print('task')
+    payload = {'download': {
+      'bucket': task[0],
+      'key': task[1],
+      'path': task[2]
+    }}
 
-  # untar model
-  os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
-  os.system('rm -r {}'.format(USE_TAR_PATH))
+    res = lambda_client.invoke(
+        FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
+        InvocationType='Event',
+        Payload=json.dumps(payload)
+    )
+    sleep(0.2)
+
+  #s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
+  #s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH)
+  #s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
+  #s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+
+  # untar model (for free_text_query api)
+  #os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
+  #os.system('rm -r {}'.format(USE_TAR_PATH))
 
   # Get card embeddings matrix
   all_cards = pd.read_csv(CORR_MATRIX_PATH)\
@@ -194,67 +215,84 @@ def stage_embed_worker(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
+  LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
+  USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
+  USE_PATH = LOCAL_MODEL_PATH + '/1'
   CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
 
-  # Get card embeddings matrix
-  embed_df = pd.read_csv(CORR_MATRIX_PATH)\
-    .rename(columns={'Unnamed: 0': 'Names'})
+  # handle download from S3 task
+  if event.get('download'):
+    print('download task')
+    bucket = event['download']['bucket']
+    key = event['download']['key']
+    path = event['download']['path']
+    s3.download_file(bucket, key, path)
 
-  # Get MTGJSON clean cards data
-  merge_cols = [
-    'Names','id','mtgArenaId','scryfallId','name','colors','setName',
-    'convertedManaCost','manaCost','loyalty','power','toughness',
-    'type','types','subtypes','text','image_urls',
-    'brawl','commander','duel','future','historic','legacy','modern',
-    'oldschool','pauper','penny','pioneer','standard','vintage'
-  ]
+    if 'model.tar.gz' in key:
+      # untar model (for free_text_query api)
+      os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
+      os.system('rm -r {}'.format(USE_TAR_PATH))
+  else:
+    print('batch of cards task')
+    # Get card embeddings matrix
+    embed_df = pd.read_csv(CORR_MATRIX_PATH)\
+      .rename(columns={'Unnamed: 0': 'Names'})
 
-  cards_df = pd.read_csv(CARD_DATA_PATH)\
-    .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
-    .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
-    .fillna('0')\
-    [merge_cols]
+    # Get MTGJSON clean cards data
+    merge_cols = [
+      'Names','id','mtgArenaId','scryfallId','name','colors','setName',
+      'convertedManaCost','manaCost','loyalty','power','toughness',
+      'type','types','subtypes','text','image_urls',
+      'brawl','commander','duel','future','historic','legacy','modern',
+      'oldschool','pauper','penny','pioneer','standard','vintage'
+    ]
 
-  # Sort, merge, save cards in EFS and Dynamo
-  cards = event['cards']
-  for card in cards:
-    staged_card = embed_df[['Names', card]]\
-      .merge(cards_df, how='left', on='Names')
+    cards_df = pd.read_csv(CARD_DATA_PATH)\
+      .assign(Names=lambda df: df.name + '-' + df.id.astype('str'))\
+      .assign(Names=lambda df: df.Names.apply(lambda x: x.replace(' ', '_').replace('//', 'II')))\
+      .fillna('0')\
+      [merge_cols]
 
-    # Item (this card) to be stored in Dynamo
-    Item = staged_card.query('Names == @card')\
-      .rename(columns={card: 'similarity'})\
-      .assign(similarity=lambda df: df.similarity.astype('str'))\
-      .assign(id=lambda df: df.id.astype('str'))\
-      .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
-      .assign(loyalty=lambda df: df.loyalty.astype('str'))\
-      .assign(power=lambda df: df.power.astype('str'))\
-      .assign(toughness=lambda df: df.toughness.astype('str'))\
-      .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))\
-      .to_dict(orient='records')[0]
+    # Sort, merge, save cards in EFS and Dynamo
+    cards = event['cards']
+    for card in cards:
+      staged_card = embed_df[['Names', card]]\
+        .merge(cards_df, how='left', on='Names')
 
-    staged_card = staged_card\
-      .sort_values(by=card, ascending=False)\
-      .head(51)\
-      .rename(columns={card: 'similarity'})\
-      .assign(similarity=lambda df: df.similarity.astype('str'))\
-      .assign(id=lambda df: df.id.astype('str'))\
-      .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
-      .assign(loyalty=lambda df: df.loyalty.astype('str'))\
-      .assign(power=lambda df: df.power.astype('str'))\
-      .assign(toughness=lambda df: df.toughness.astype('str'))\
-      .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))
-    
-    # Write to EFS
-    staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
+      # Item (this card) to be stored in Dynamo
+      Item = staged_card.query('Names == @card')\
+        .rename(columns={card: 'similarity'})\
+        .assign(similarity=lambda df: df.similarity.astype('str'))\
+        .assign(id=lambda df: df.id.astype('str'))\
+        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
+        .assign(loyalty=lambda df: df.loyalty.astype('str'))\
+        .assign(power=lambda df: df.power.astype('str'))\
+        .assign(toughness=lambda df: df.toughness.astype('str'))\
+        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))\
+        .to_dict(orient='records')[0]
 
-    # Write to Dyanmo (exclude this card from it's own similarities)
-    Item['similarities'] = staged_card.query('Names != @card').to_dict(orient='records')
+      staged_card = staged_card\
+        .sort_values(by=card, ascending=False)\
+        .head(51)\
+        .rename(columns={card: 'similarity'})\
+        .assign(similarity=lambda df: df.similarity.astype('str'))\
+        .assign(id=lambda df: df.id.astype('str'))\
+        .assign(mtgArenaId=lambda df: df.mtgArenaId.astype('str'))\
+        .assign(loyalty=lambda df: df.loyalty.astype('str'))\
+        .assign(power=lambda df: df.power.astype('str'))\
+        .assign(toughness=lambda df: df.toughness.astype('str'))\
+        .assign(convertedManaCost=lambda df: df.convertedManaCost.astype('str'))
+      
+      # Write to EFS
+      staged_card.to_csv(SORTED_CARD_PATH + '/{}.csv'.format(card), index=False)
 
-    _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
-    sleep(1)
+      # Write to Dyanmo (exclude this card from it's own similarities)
+      Item['similarities'] = staged_card.query('Names != @card').to_dict(orient='records')
+
+      _ = dynamodb_lib.call(SIMILARITY_TABLE, 'put_item', Item)
+      sleep(1)
 
   return success({'status': True})

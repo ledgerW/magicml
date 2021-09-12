@@ -1,6 +1,6 @@
 cards_prep:
   handler: cards_prep.worker
-  memorySize: 3000
+  memorySize: 3500
   timeout: 900
   maximumRetryAttempts: 0
   layers:
