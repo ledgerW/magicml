@@ -140,7 +140,7 @@ def stage_embed_master(event, context):
   LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
   USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
   USE_PATH = LOCAL_MODEL_PATH + '/1'
-  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
+  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.parquet'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
@@ -152,38 +152,38 @@ def stage_embed_master(event, context):
   os.makedirs(USE_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
-  download_tasks = [
-    [MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH],
-    [INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH],
-    [INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH],
-    [CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH]
-  ]
-  for task in download_tasks:
-    print('task')
-    payload = {'download': {
-      'bucket': task[0],
-      'key': task[1],
-      'path': task[2]
-    }}
+  #download_tasks = [
+  #  [MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH],
+  #  [INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH],
+  #  [INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH],
+  #  [CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH]
+  #]
+  #for task in download_tasks:
+  #  print('task')
+  #  payload = {'download': {
+  #    'bucket': task[0],
+  #    'key': task[1],
+  #    'path': task[2]
+  #  }}
 
-    res = lambda_client.invoke(
-        FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
-        InvocationType='Event',
-        Payload=json.dumps(payload)
-    )
-    sleep(0.2)
+  #  res = lambda_client.invoke(
+  #      FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
+  #      InvocationType='Event',
+  #      Payload=json.dumps(payload)
+  #  )
+  #  sleep(0.2)
 
-  #s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
-  #s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH)
-  #s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
-  #s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
+  s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.parquet', CORR_MATRIX_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
+  s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # untar model (for free_text_query api)
-  #os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
-  #os.system('rm -r {}'.format(USE_TAR_PATH))
+  os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
+  os.system('rm -r {}'.format(USE_TAR_PATH))
 
   # Get card embeddings matrix
-  all_cards = pd.read_csv(CORR_MATRIX_PATH)\
+  all_cards = pd.read_parquet(CORR_MATRIX_PATH)\
     .rename(columns={'Unnamed: 0': 'Names'})\
     .columns
 
@@ -218,7 +218,7 @@ def stage_embed_worker(event, context):
   LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
   USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
   USE_PATH = LOCAL_MODEL_PATH + '/1'
-  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.csv'
+  CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.parquet'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
   SORTED_CARD_PATH = LOCAL_OUTPUT_PATH + '/sorted'
@@ -238,7 +238,7 @@ def stage_embed_worker(event, context):
   else:
     print('batch of cards task')
     # Get card embeddings matrix
-    embed_df = pd.read_csv(CORR_MATRIX_PATH)\
+    embed_df = pd.read_parquet(CORR_MATRIX_PATH)\
       .rename(columns={'Unnamed: 0': 'Names'})
 
     # Get MTGJSON clean cards data
