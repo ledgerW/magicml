@@ -17,7 +17,7 @@ get_embeddings:
 
 stage_embed_master:
   handler: similarity.stage_embed_master
-  memorySize: 3000
+  memorySize: 3500
   timeout: 900
   maximumRetryAttempts: 0
   layers:
@@ -34,7 +34,7 @@ stage_embed_master:
 
 stage_embed_worker:
   handler: similarity.stage_embed_worker
-  memorySize: 3000
+  memorySize: 3500
   timeout: 900
   maximumRetryAttempts: 1
   layers:

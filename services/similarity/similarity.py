@@ -184,7 +184,8 @@ def stage_embed_master(event, context):
 
   # Get card embeddings matrix
   all_cards = pd.read_parquet(CORR_MATRIX_PATH)\
-    .rename(columns={'Unnamed: 0': 'Names'})\
+    .reset_index()\
+    .rename(columns={'index': 'Names'})\
     .columns
 
   if event['n_cards'] > 0:
@@ -239,7 +240,8 @@ def stage_embed_worker(event, context):
     print('batch of cards task')
     # Get card embeddings matrix
     embed_df = pd.read_parquet(CORR_MATRIX_PATH)\
-      .rename(columns={'Unnamed: 0': 'Names'})
+      .reset_index()\
+      .rename(columns={'index': 'Names'})\
 
     # Get MTGJSON clean cards data
     merge_cols = [
