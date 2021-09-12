@@ -42,26 +42,28 @@ provider:
     CLEAN_BUCKET: ${self:custom.clean_data_bucket}
     EFS_MOUNT_PATH: '/mnt${self:custom.data_prep_mnt_path}'
 
-  iamRoleStatements:
-    - Effect: 'Allow'
-      Action:
-        - 's3:ListBucket'
-      Resource: '*'
-    - Effect: 'Allow'
-      Action:
-        # Lambda Actions
-        - 'lambda:InvokeFunction'
-        - 'lambda:InvokeAsync'
-        # S3 Actions
-        - 's3:PutObject'
-        - 's3:GetObject'
-        - 's3:DeleteObject'
-      Resource: '*'
-    - Effect: Allow
-      Action:
-        - xray:PutTraceSegments
-        - xray:PutTelemetryRecords
-      Resource: '*'
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 's3:ListBucket'
+          Resource: '*'
+        - Effect: 'Allow'
+          Action:
+            # Lambda Actions
+            - 'lambda:InvokeFunction'
+            - 'lambda:InvokeAsync'
+            # S3 Actions
+            - 's3:PutObject'
+            - 's3:GetObject'
+            - 's3:DeleteObject'
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+          Resource: '*'
 
 functions:
   - ${file(functions/functions.yml)}

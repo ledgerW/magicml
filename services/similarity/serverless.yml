@@ -48,43 +48,45 @@ provider:
     SM_ROLE: ${cf:magicml-common-${self:custom.stage}.SagemakerRoleARN}
     SIMILARITY_TABLE: ${self:custom.similarity_table}
 
-  iamRoleStatements:
-    - Effect: 'Allow'
-      Action:
-        - 's3:ListBucket'
-      Resource: '*'
-    - Effect: 'Allow'
-      Action:
-        # Lambda Actions
-        - 'lambda:InvokeFunction'
-        - 'lambda:InvokeAsync'
-        # S3 Actions
-        - 's3:PutObject'
-        - 's3:GetObject'
-        - 's3:DeleteObject'
-        # Sagemaker Actions
-        - 'sagemaker:*'
-        # DynamoDb Actions
-        - dynamodb:DescribeTable
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchGetItem
-        # IAM Actions
-        - 'iam:*'
-        # EC2 Actions
-        - 'ec2:*'
-        # STS Actions
-        - 'sts:*'
-      Resource: '*'
-    - Effect: Allow
-      Action:
-        - xray:PutTraceSegments
-        - xray:PutTelemetryRecords
-      Resource: '*'
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 's3:ListBucket'
+          Resource: '*'
+        - Effect: 'Allow'
+          Action:
+            # Lambda Actions
+            - 'lambda:InvokeFunction'
+            - 'lambda:InvokeAsync'
+            # S3 Actions
+            - 's3:PutObject'
+            - 's3:GetObject'
+            - 's3:DeleteObject'
+            # Sagemaker Actions
+            - 'sagemaker:*'
+            # DynamoDb Actions
+            - dynamodb:DescribeTable
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+            # IAM Actions
+            - 'iam:*'
+            # EC2 Actions
+            - 'ec2:*'
+            # STS Actions
+            - 'sts:*'
+          Resource: '*'
+        - Effect: Allow
+          Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+          Resource: '*'
 
 functions:
   - ${file(functions/similarity.yml)}
