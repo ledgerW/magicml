@@ -173,9 +173,18 @@ def stage_embed_master(event, context):
   #  )
   #  sleep(0.2)
 
+  # check if S3 Triggered
+  if not event.get('n_cards'):
+    event['n_cards'] = -1
+    event['batch_size'] = 100
+
+  print('model')
   s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
+  print('embeddings.parquet')
   s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.parquet', CORR_MATRIX_PATH)
+  print('embeddings.npy')
   s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
+  print('cards.csv')
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # untar model (for free_text_query api)
@@ -261,6 +270,7 @@ def stage_embed_worker(event, context):
     # Sort, merge, save cards in EFS and Dynamo
     cards = event['cards']
     for card in cards:
+      print(card)
       staged_card = embed_df[['Names', card]]\
         .merge(cards_df, how='left', on='Names')
 

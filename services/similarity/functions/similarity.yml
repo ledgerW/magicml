@@ -17,7 +17,7 @@ get_embeddings:
 
 stage_embed_master:
   handler: similarity.stage_embed_master
-  memorySize: 3500
+  memorySize: 5000
   timeout: 900
   maximumRetryAttempts: 0
   layers:
@@ -28,13 +28,19 @@ stage_embed_master:
         method: post
         cors: true
         authorizer: aws_iam
+    - s3:
+        bucket: ${self:custom.inference_bucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - suffix: cards_embeddings.parquet
+        existing: true
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
 
 stage_embed_worker:
   handler: similarity.stage_embed_worker
-  memorySize: 3500
+  memorySize: 5500
   timeout: 900
   maximumRetryAttempts: 1
   layers:

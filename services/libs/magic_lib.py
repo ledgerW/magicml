@@ -1,4 +1,5 @@
 supported_sets = [
+  'Innistrad',
   'Forgotten Realms',
   'Strixhaven',
   'Throne of Eldraine',

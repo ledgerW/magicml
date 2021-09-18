@@ -1,6 +1,8 @@
 cards_prep:
   handler: cards_prep.worker
-  memorySize: 3500
+  destinations:
+    onSuccess: ${cf:magicml-similarity-${self:custom.stage}.GetUnderscoreembeddingsLambdaFunctionQualifiedArn}
+  memorySize: 5000
   timeout: 900
   maximumRetryAttempts: 0
   layers:
@@ -11,6 +13,13 @@ cards_prep:
         method: get
         cors: true
         authorizer: aws_iam
+    - s3:
+        bucket: ${self:custom.raw_data_bucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - prefix: scryfall/
+          - suffix: .json
+        existing: true
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
