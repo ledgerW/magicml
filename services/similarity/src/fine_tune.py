@@ -169,8 +169,9 @@ if __name__=="__main__":
   ]
 
   card_txt_tokens = tokenizer(cards_txt, padding='max_length', max_length=MAX_INPUT_LENGTH, return_tensors="tf")
+  card_txt_tokens = dict(card_txt_tokens)
 
-  embeddings = model(card_txt_tokens).numpy()
+  embeddings = model.predict(card_txt_tokens, batch_size=BATCH_SIZE)
   np.save(LOCAL_OUTPUT_PATH + '/embeddings.npy', embeddings)
 
   corr = np.inner(embeddings, embeddings)
