@@ -72,7 +72,7 @@ def fine_tune(event, context):
     ProcessingResources={
         'ClusterConfig': {
             'InstanceCount': 1,
-            'InstanceType': 'ml.p2.xlarge',
+            'InstanceType': 'ml.g4dn.4xlarge',
             'VolumeSizeInGB': 30
         }
     },

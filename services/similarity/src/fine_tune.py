@@ -17,7 +17,7 @@ LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
 
 # Fine Tuning Hyperparams
 EPOCHS = 3
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 TB_DIR = LOCAL_OUTPUT_PATH + '/tensorboard'
 EMBEDDING_SIZE = 256
