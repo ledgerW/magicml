@@ -32,6 +32,89 @@ sm = boto3.client('sagemaker')
 lambda_client = boto3.client('lambda')
 
 
+def fine_tune(event, context):
+  '''
+  '''
+  MNT_PATH = '/opt/ml/processing'
+  LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
+  LOCAL_CODE_PATH = '{}/input/code'.format(MNT_PATH)
+  LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
+
+  image_uri = '763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-tensorflow-training:2.5.1-transformers4.12.3-gpu-py37-cu112-ubuntu18.04'
+
+  input_prefix = 'cards'
+  input_data = 's3://{}/{}/cards.csv'.format(CLEAN_BUCKET, input_prefix)
+
+  src_prefix = 'sm_processing'
+  src_code = 's3://{}/{}/fine_tune.py'.format(SRC_BUCKET, src_prefix)
+
+  output_prefix = 'MTG_BERT'
+  output_data = 's3://{}/{}'.format(INFERENCE_BUCKET, output_prefix)
+
+  s3.upload_file('src/fine_tune.py', SRC_BUCKET, 'sm_processing/fine_tune.py')
+
+  now = datetime.datetime.now().strftime(format='%Y-%d-%m-%H-%M-%S')
+
+  sm.create_processing_job(
+    ProcessingJobName='fine-tune-MTG-BERT-{}'.format(now),
+    RoleArn=SM_ROLE,
+    StoppingCondition={
+        'MaxRuntimeInSeconds': 7200
+    },
+    AppSpecification={
+        'ImageUri': image_uri,
+        'ContainerEntrypoint': [
+            'python3',
+            '-v',
+            (LOCAL_CODE_PATH + '/fine_tune.py')
+        ]
+    },
+    ProcessingResources={
+        'ClusterConfig': {
+            'InstanceCount': 1,
+            'InstanceType': 'ml.p2.xlarge',
+            'VolumeSizeInGB': 30
+        }
+    },
+    ProcessingInputs=[
+        {
+            'InputName': 'cards',
+            'S3Input': {
+                'S3Uri': input_data,
+                'LocalPath': LOCAL_INPUT_PATH,
+                'S3DataType': 'S3Prefix',
+                'S3InputMode': 'File',
+                'S3DataDistributionType': 'FullyReplicated',
+            }
+        },
+        {
+            'InputName': 'code',
+            'S3Input': {
+                'S3Uri': src_code,
+                'LocalPath': LOCAL_CODE_PATH,
+                'S3DataType': 'S3Prefix',
+                'S3InputMode': 'File',
+                'S3DataDistributionType': 'FullyReplicated'
+            }
+        }
+    ],
+    ProcessingOutputConfig={
+        'Outputs': [
+            {
+                'OutputName': 'embeddings',
+                'S3Output': {
+                    'S3Uri': output_data,
+                    'LocalPath': LOCAL_OUTPUT_PATH,
+                    'S3UploadMode': 'EndOfJob'
+                }
+            }
+        ]
+    }
+  )
+
+  return success({'status': True})
+
+
 def get_embeddings(event, context):
   '''
   '''
@@ -137,9 +220,11 @@ def stage_embed_master(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
-  LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
-  USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
-  USE_PATH = LOCAL_MODEL_PATH + '/1'
+  LOCAL_MODEL_PATH = '{}/models/MTG_BERT'.format(MNT_PATH)
+  MODEL_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
+  MODEL_PATH = LOCAL_MODEL_PATH + '/1'
+  TOKENIZER_TAR_PATH = LOCAL_MODEL_PATH + '/tokenizer.tar.gz'
+  TOKENIZER_PATH = LOCAL_MODEL_PATH + '/tokenizer'
   CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.parquet'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
@@ -149,7 +234,7 @@ def stage_embed_master(event, context):
   os.makedirs(LOCAL_OUTPUT_PATH, exist_ok=True)
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
   os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
-  os.makedirs(USE_PATH, exist_ok=True)
+  os.makedirs(MODEL_PATH, exist_ok=True)
 
   # Get embeddings and card data from S3
   #download_tasks = [
@@ -179,17 +264,23 @@ def stage_embed_master(event, context):
     event['batch_size'] = 100
 
   print('model')
-  s3.download_file(MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'MTG_BERT/model.tar.gz', MODEL_TAR_PATH)
+  print('tokenizer')
+  s3.download_file(INFERENCE_BUCKET, 'MTG_BERT/tokenizer.tar.gz', TOKENIZER_TAR_PATH)
   print('embeddings.parquet')
-  s3.download_file(INFERENCE_BUCKET, 'use-large/cards_embeddings.parquet', CORR_MATRIX_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'MTG_BERT/cards_embeddings.parquet', CORR_MATRIX_PATH)
   print('embeddings.npy')
-  s3.download_file(INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'MTG_BERT/embeddings.npy', EMBEDDINGS_PATH)
   print('cards.csv')
   s3.download_file(CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH)
 
   # untar model (for free_text_query api)
-  os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
-  os.system('rm -r {}'.format(USE_TAR_PATH))
+  os.system('tar -xf {} -C {}'.format(MODEL_TAR_PATH, MODEL_PATH))
+  os.system('rm -r {}'.format(MODEL_TAR_PATH))
+
+  # untar tokenizer (for free_text_query api)
+  os.system('tar -xf {} -C {}'.format(TOKENIZER_TAR_PATH, TOKENIZER_PATH))
+  os.system('rm -r {}'.format(TOKENIZER_TAR_PATH))
 
   # Get card embeddings matrix
   all_cards = pd.read_parquet(CORR_MATRIX_PATH)\
@@ -225,9 +316,9 @@ def stage_embed_worker(event, context):
   MNT_PATH = os.getenv('EFS_MOUNT_PATH')
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
-  LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
-  USE_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
-  USE_PATH = LOCAL_MODEL_PATH + '/1'
+  LOCAL_MODEL_PATH = '{}/models/MTG_BERT'.format(MNT_PATH)
+  MODEL_TAR_PATH = LOCAL_MODEL_PATH + '/model.tar.gz'
+  MODEL_PATH = LOCAL_MODEL_PATH + '/1'
   CORR_MATRIX_PATH = LOCAL_INPUT_PATH + '/corr_matrix.parquet'
   EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
   CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
@@ -243,8 +334,8 @@ def stage_embed_worker(event, context):
 
     if 'model.tar.gz' in key:
       # untar model (for free_text_query api)
-      os.system('tar -xf {} -C {}'.format(USE_TAR_PATH, USE_PATH))
-      os.system('rm -r {}'.format(USE_TAR_PATH))
+      os.system('tar -xf {} -C {}'.format(MODEL_TAR_PATH, MODEL_PATH))
+      os.system('rm -r {}'.format(MODEL_TAR_PATH))
   else:
     print('batch of cards task')
     # Get card embeddings matrix

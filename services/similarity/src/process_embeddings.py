@@ -42,8 +42,5 @@ if __name__=="__main__":
 
   corr = np.inner(embeddings, embeddings)
 
-  #pd.DataFrame(corr, columns=cards_name, index=cards_name)\
-  #  .to_csv(LOCAL_OUTPUT_PATH + '/cards_embeddings.csv')
-
   pd.DataFrame(corr, columns=cards_name, index=cards_name)\
     .to_parquet(LOCAL_OUTPUT_PATH + '/cards_embeddings.parquet')

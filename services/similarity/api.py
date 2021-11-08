@@ -25,8 +25,9 @@ MNT_PATH = os.getenv('EFS_MOUNT_PATH')
 LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
 CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
-LOCAL_MODEL_PATH = '{}/models/use-large'.format(MNT_PATH)
-USE_PATH = LOCAL_MODEL_PATH + '/1'
+LOCAL_MODEL_PATH = '{}/models/MTG_BERT'.format(MNT_PATH)
+MODEL_PATH = LOCAL_MODEL_PATH + '/1'
+TOKENIZER_PATH = LOCAL_MODEL_PATH + '/tokenizer'
 
 print(os.listdir())
 
@@ -35,12 +36,16 @@ if os.getenv('CONTAINER_ENV'):
   import numpy as np
   import pandas as pd
   import tensorflow as tf
+  from transformers import BertTokenizer
 
   # Load model
-  print('loading USE')
-  print(USE_PATH)
-  print(os.listdir(USE_PATH))
-  use_embed = tf.saved_model.load((USE_PATH+'/1'))
+  print('loading MTG_BERT')
+  print(MODEL_PATH)
+  print(os.listdir(MODEL_PATH))
+  model = tf.saved_model.load((MODEL_PATH))
+
+  # Load tokenizer
+  tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH)
 
   # Load card embeddings and names
   print('loading embeddings')
@@ -93,6 +98,8 @@ def free_text_query(event, context):
   event['key']: what index/attribute to search by
   event['value']: the value of the search attribute
   '''
+  MAX_INPUT_LENGTH = 150
+
   print(event)
   try:
     query = event['query']
@@ -100,7 +107,8 @@ def free_text_query(event, context):
     query = json.loads(event['body'])['query']
 
   # Get query embedding
-  embed_query = use_embed(query)
+  query_tokens = tokenizer(query, padding='max_length', max_length=MAX_INPUT_LENGTH, return_tensors="tf")
+  embed_query = model(query_tokens).numpy()
 
   # Get similar cards
   sims = np.inner(all_embeds, embed_query)
