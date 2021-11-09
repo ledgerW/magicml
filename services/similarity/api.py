@@ -26,7 +26,7 @@ LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
 CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
 LOCAL_MODEL_PATH = '{}/models/MTG_BERT'.format(MNT_PATH)
-MODEL_PATH = LOCAL_MODEL_PATH + '/1'
+MODEL_PATH = LOCAL_MODEL_PATH + '/1/1'
 TOKENIZER_PATH = LOCAL_MODEL_PATH + '/tokenizer'
 
 print(os.listdir())
@@ -40,12 +40,19 @@ if os.getenv('CONTAINER_ENV'):
 
   # Load model
   print('loading MTG_BERT')
+  print(LOCAL_MODEL_PATH)
   print(MODEL_PATH)
   print(os.listdir(MODEL_PATH))
-  model = tf.saved_model.load((MODEL_PATH))
+  model = tf.keras.models.load_model(MODEL_PATH)
 
   # Load tokenizer
-  tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH)
+  print(os.listdir(TOKENIZER_PATH))
+  try:
+    print('in try:')
+    tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH)
+  except:
+    print('in except:')
+    tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH + '/tokenizer')
 
   # Load card embeddings and names
   print('loading embeddings')

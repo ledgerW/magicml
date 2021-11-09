@@ -235,28 +235,7 @@ def stage_embed_master(event, context):
   os.makedirs(SORTED_CARD_PATH, exist_ok=True)
   os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
   os.makedirs(MODEL_PATH, exist_ok=True)
-
-  # Get embeddings and card data from S3
-  #download_tasks = [
-  #  [MODELS_BUCKET, 'use-large/model.tar.gz', USE_TAR_PATH],
-  #  [INFERENCE_BUCKET, 'use-large/cards_embeddings.csv', CORR_MATRIX_PATH],
-  #  [INFERENCE_BUCKET, 'use-large/embeddings.npy', EMBEDDINGS_PATH],
-  #  [CLEAN_BUCKET, 'cards/cards.csv', CARD_DATA_PATH]
-  #]
-  #for task in download_tasks:
-  #  print('task')
-  #  payload = {'download': {
-  #    'bucket': task[0],
-  #    'key': task[1],
-  #    'path': task[2]
-  #  }}
-
-  #  res = lambda_client.invoke(
-  #      FunctionName='magicml-similarity-{}-stage_embed_worker'.format(STAGE),
-  #      InvocationType='Event',
-  #      Payload=json.dumps(payload)
-  #  )
-  #  sleep(0.2)
+  os.makedirs(TOKENIZER_PATH, exist_ok=True)
 
   # check if S3 Triggered
   if not event.get('n_cards'):

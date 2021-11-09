@@ -36,13 +36,13 @@ def load_fine_tuning_data(target_dir, label_idx):
 
 
 def build_model(input_size, embedding_size, n_labels):
-  bert = TFAutoModel.from_pretrained("bert-base-cased")
+  bert = TFAutoModel.from_pretrained("bert-base-cased", output_hidden_states=False)
 
   input_ids = tf.keras.layers.Input(shape=(input_size,), name='input_ids', dtype='int32')
   input_token_types = tf.keras.layers.Input(shape=(input_size,), name='token_type_ids', dtype='int32')
   input_masks = tf.keras.layers.Input(shape=(input_size,), name='attention_mask', dtype='int32')
 
-  x = bert(input_ids, input_token_types, input_masks)[0]
+  x = bert.bert(input_ids, input_token_types, input_masks)[0]
   x = tf.keras.layers.GlobalMaxPool1D()(x)
   x = tf.keras.layers.Dense(embedding_size, activation='relu', name='embeddings')(x)
   x = tf.keras.layers.Dropout(0.2)(x)
