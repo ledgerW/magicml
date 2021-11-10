@@ -113,9 +113,6 @@ if __name__=="__main__":
     train_labels
   ))
 
-  #input_size = train_dataset.element_spec[0]['input_ids'].shape[0]
-  #print('Input Size (max token sequence length): {}'.format(input_size))
-
   n_labels = len(set(train_labels))
   print('N Train Labels: {}'.format(n_labels))
 
