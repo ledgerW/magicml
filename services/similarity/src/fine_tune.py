@@ -16,11 +16,11 @@ LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
 
 # Fine Tuning Hyperparams
-EPOCHS = 3
+EPOCHS = 5
 BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 TB_DIR = LOCAL_OUTPUT_PATH + '/tensorboard'
-EMBEDDING_SIZE = 64
+EMBEDDING_SIZE = 256
 MAX_INPUT_LENGTH = 150
 
 
@@ -52,6 +52,12 @@ def build_model(input_size, embedding_size, n_labels):
     inputs=[input_ids, input_token_types, input_masks],
     outputs = x
   )
+
+  # freeze bert and only train classifier layers
+  for layer in clf_model.layers:
+    if layer.name == 'bert':
+      layer.trainable = False
+  
   print(clf_model.summary())
 
   return clf_model
