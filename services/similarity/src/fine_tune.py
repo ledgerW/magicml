@@ -21,7 +21,7 @@ BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 TB_DIR = LOCAL_OUTPUT_PATH + '/tensorboard'
 EMBEDDING_SIZE = 64
-MAX_INPUT_LENGTH = 125
+MAX_INPUT_LENGTH = 150
 
 
 def load_fine_tuning_data(target_dir, label_idx):
