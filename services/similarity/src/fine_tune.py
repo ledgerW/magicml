@@ -52,11 +52,6 @@ def build_model(input_size, embedding_size, n_labels):
     inputs=[input_ids, input_token_types, input_masks],
     outputs = x
   )
-
-  # freeze bert and only train classifier layers
-  for layer in clf_model.layers:
-    if layer.name == 'bert':
-      layer.trainable = False
   
   print(clf_model.summary())
 
@@ -125,6 +120,11 @@ if __name__=="__main__":
   # load huggingface pretrained BERT 
   clf_model = build_model(MAX_INPUT_LENGTH, EMBEDDING_SIZE, n_labels)
 
+  # freeze bert and only train classifier layers
+  for layer in clf_model.layers:
+    if layer.name == 'bert':
+      layer.trainable = False
+
   clf_model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -134,13 +134,36 @@ if __name__=="__main__":
     ],
   )
 
-  # fine tune
+  # train classifier layer on frozen BERT first
   history = clf_model.fit(
     train_dataset.shuffle(1000).batch(BATCH_SIZE),
     batch_size=BATCH_SIZE,
     epochs=EPOCHS,
     callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TB_DIR)]
   )
+
+  # unfreeze bert for fine-tuning
+  for layer in clf_model.layers:
+    if layer.name == 'bert':
+      layer.trainable = True
+
+  clf_model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    metrics=[
+        tf.metrics.SparseCategoricalAccuracy(),
+        tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3)
+    ],
+  )
+
+  # train classifier on unfrozen BERT to fine-tune
+  history = clf_model.fit(
+    train_dataset.shuffle(1000).batch(BATCH_SIZE),
+    batch_size=BATCH_SIZE,
+    epochs=EPOCHS,
+    callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TB_DIR)]
+  )
+
 
   # create embedding model
   model = tf.keras.Model(
