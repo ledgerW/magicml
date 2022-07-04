@@ -25,6 +25,7 @@
 
 ### Run GPL Fine Tuning on Corpus with New Set  
 - Currently running manually:  
+  - TODO: update training to get corpus from `s3://magicml-clean-data.dev/cards/corpus.jsonl`
   - `cd services/similarity`  
   - `python src/sm_train.py [PARAMS]`
 

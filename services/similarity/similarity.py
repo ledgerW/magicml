@@ -78,7 +78,7 @@ def get_embeddings(event, context):
     ProcessingResources={
         'ClusterConfig': {
             'InstanceCount': 1,
-            'InstanceType': 'ml.g4dn.4xlarge',
+            'InstanceType': 'ml.m5.4xlarge',
             'VolumeSizeInGB': 30
         }
     },
