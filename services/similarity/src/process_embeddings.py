@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 sys.setrecursionlimit(100000)
 
-import os
+import shutil
 import tarfile
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ if __name__=="__main__":
       tar.extractall(path='.')
 
   # Move model.tar.gz to output path for easy retrieval downstream
-  os.rename(model_path, LOCAL_OUTPUT_PATH + '/model.tar.gz')
+  shutil.copy(model_path, LOCAL_OUTPUT_PATH + '/model.tar.gz')
 
   print('Loading model')
   model = SentenceTransformer('magicml-LM')
