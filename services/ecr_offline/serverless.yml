@@ -19,25 +19,23 @@ provider:
   lambdaHashingVersion: 20201221
   ecr:
     images:
-      tf_image:
+      ST_image:
         path: ../
-        file: Dockerfile
+        file: st.Dockerfile
 
 functions:
-  dummy:
+  dummy_ST:
     image:
-      name: tf_image
+      name: ST_image
       command:
         - api.dummy
       entryPoint:
         - '/lambda-entrypoint.sh'
-    memorySize: 256
+    memorySize: 128
     timeout: 60
     maximumRetryAttempts: 0
-    environment:
-        CONTAINER_ENV: 'True'
     events:
       - http:
-          path: dummy
-          method: post
+          path: dummy_ST
+          method: get
           cors: true

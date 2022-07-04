@@ -25,9 +25,8 @@ MNT_PATH = os.getenv('EFS_MOUNT_PATH')
 LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
 EMBEDDINGS_PATH = LOCAL_INPUT_PATH + '/embeddings.npy'
 CARD_DATA_PATH = LOCAL_INPUT_PATH + '/cards.csv'
-LOCAL_MODEL_PATH = '{}/models/MTG_BERT'.format(MNT_PATH)
-MODEL_PATH = LOCAL_MODEL_PATH + '/1/1'
-TOKENIZER_PATH = LOCAL_MODEL_PATH + '/tokenizer'
+LOCAL_MODEL_PATH = '{}/models/magicBERT'.format(MNT_PATH)
+MODEL_PATH = LOCAL_MODEL_PATH + '/magicml-LM'
 
 print(os.listdir())
 
@@ -35,24 +34,14 @@ print(os.listdir())
 if os.getenv('CONTAINER_ENV'):
   import numpy as np
   import pandas as pd
-  import tensorflow as tf
-  from transformers import BertTokenizer
+  from sentence_transformers import SentenceTransformer, util
 
   # Load model
-  print('loading MTG_BERT')
+  print('loading magicBERT')
   print(LOCAL_MODEL_PATH)
   print(MODEL_PATH)
   print(os.listdir(MODEL_PATH))
-  model = tf.keras.models.load_model(MODEL_PATH)
-
-  # Load tokenizer
-  print(os.listdir(TOKENIZER_PATH))
-  try:
-    print('in try:')
-    tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH)
-  except:
-    print('in except:')
-    tokenizer = BertTokenizer.from_pretrained(TOKENIZER_PATH + '/tokenizer')
+  model = SentenceTransformer(MODEL_PATH)
 
   # Load card embeddings and names
   print('loading embeddings')
@@ -73,7 +62,7 @@ if os.getenv('CONTAINER_ENV'):
     [merge_cols]
 
   card_names = [
-  (name + '-' + str(id_val)).replace(' ','_').replace('//', 'II') for name, id_val in zip(cards_df.name, cards_df.id)
+    (name + '-' + str(id_val)).replace(' ','_').replace('//', 'II') for name, id_val in zip(cards_df.name, cards_df.id)
   ]
 
 
@@ -114,11 +103,10 @@ def free_text_query(event, context):
     query = json.loads(event['body'])['query']
 
   # Get query embedding
-  query_tokens = tokenizer(query, padding='max_length', max_length=MAX_INPUT_LENGTH, return_tensors="tf")
-  embed_query = model(query_tokens).numpy()
+  query_embed = model.encode(query)
 
   # Get similar cards
-  sims = np.inner(all_embeds, embed_query)
+  sims = util.cos_sim(all_embeds, query_embed).numpy()
 
   sims_list = pd.DataFrame(sims, columns=['free_text_query'], index=card_names)\
     .sort_values(by='free_text_query', ascending=False)\

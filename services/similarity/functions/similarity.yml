@@ -1,20 +1,3 @@
-fine_tune:
-  handler: similarity.fine_tune
-  memorySize: 256
-  timeout: 900
-  maximumRetryAttempts: 0
-  layers:
-    - {Ref: PythonRequirementsLambdaLayer}
-  events:
-    - http:
-        path: fine_tune
-        method: get
-        cors: true
-        authorizer: aws_iam
-  fileSystemConfig:
-    localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
-    arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}
-
 get_embeddings:
   handler: similarity.get_embeddings
   memorySize: 256
@@ -34,7 +17,7 @@ get_embeddings:
 
 stage_embed_master:
   handler: similarity.stage_embed_master
-  memorySize: 5000
+  memorySize: 7000
   timeout: 900
   maximumRetryAttempts: 0
   layers:
@@ -49,7 +32,7 @@ stage_embed_master:
         bucket: ${self:custom.inference_bucket}
         event: s3:ObjectCreated:*
         rules:
-          - suffix: cards_embeddings.parquet
+          - suffix: embeddings_matrix.parquet
         existing: true
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
@@ -57,7 +40,7 @@ stage_embed_master:
 
 stage_embed_worker:
   handler: similarity.stage_embed_worker
-  memorySize: 5500
+  memorySize: 7000
   timeout: 900
   maximumRetryAttempts: 1
   layers:

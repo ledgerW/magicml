@@ -13,7 +13,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 from libs.response_lib import success, failure
-from libs.magic_lib import supported_sets
 
 # AWS X-Ray Tracing
 #from aws_xray_sdk.core import xray_recorder
@@ -67,6 +66,19 @@ def worker(event, context):
       local_path = LOCAL_RAW_PATH + '/' + 'scryfall_cards.json'
       s3.download_file(RAW_BUCKET, s3_key, local_path)
 
+    # Get Supported Sets file
+    res = s3.list_objects_v2(
+        Bucket=RAW_BUCKET,
+        Prefix='supported_sets'
+    )
+    card_files = [file['Key'] for file in res['Contents'] if 'supported_sets.txt' in file['Key']]
+    for s3_key in card_files:
+      print(s3_key)
+      local_path = LOCAL_RAW_PATH + '/' + 'supported_sets.txt'
+      s3.download_file(RAW_BUCKET, s3_key, local_path)
+
+    supported_sets = list(pd.read_csv(LOCAL_RAW_PATH + '/supported_sets.txt', sep='\n', names=['sets']).sets)
+
     # Prep data
     # Get MTGJSON data
     cards_df = pd.read_csv(LOCAL_RAW_PATH + '/cards.csv')\
@@ -93,6 +105,7 @@ def worker(event, context):
     scryfall_df = pd.read_json(LOCAL_RAW_PATH + '/scryfall_cards.json')
     scryfall_sets = scryfall_df.set_name.unique()
     supported_sets_varients = [scry_s for scry_s in scryfall_sets if any([s in scry_s for s in supported_sets])]
+    print(supported_sets_varients)
 
     scryfall_df = scryfall_df\
         .query('set_name == @supported_sets_varients')\
@@ -109,6 +122,16 @@ def worker(event, context):
     cards_df\
       .query('setName == @supported_sets_varients')\
       .to_csv(LOCAL_CLEAN_PATH + '/cards.csv', index=False)
+
+    # Save cards in BeIR format for GPL Domain Adaptation
+    cards_df\
+      .query('setName == @supported_sets_varients')\
+      .query('text.notnull()')\
+      .assign(title='')\
+      .assign(id=lambda df: df.id.astype(str))\
+      .rename(columns={'id':'_id'})\
+      [['text','title','_id']]\
+      .to_json(LOCAL_CLEAN_PATH + '/corpus.jsonl', orient='records', lines=True)
 
     # Save ALL cards in local EFS
     cards_df\

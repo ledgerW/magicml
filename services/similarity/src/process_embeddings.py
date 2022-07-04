@@ -9,7 +9,7 @@ import tarfile
 import boto3
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+from sentence_transformers import SentenceTransformer, util
 
 
 MNT_PATH = '/opt/ml/processing'
@@ -34,13 +34,16 @@ if __name__=="__main__":
   with tarfile.open(model_path) as tar:
       tar.extractall(path='.')
 
-  print('Loading model')
-  use_embed = tf.saved_model.load('1')
+  # Move model.tar.gz to output path for easy retrieval downstream
+  os.rename(model_path, LOCAL_OUTPUT_PATH + '/model.tar.gz')
 
-  embeddings = use_embed(cards_txt)
+  print('Loading model')
+  model = SentenceTransformer('magicml-LM')
+
+  embeddings = model.encode(cards_txt)
   np.save(LOCAL_OUTPUT_PATH + '/embeddings.npy', embeddings)
 
-  corr = np.inner(embeddings, embeddings)
+  cos_sim = util.cos_sim(embeddings, embeddings).numpy()
 
-  pd.DataFrame(corr, columns=cards_name, index=cards_name)\
-    .to_parquet(LOCAL_OUTPUT_PATH + '/cards_embeddings.parquet')
+  pd.DataFrame(cos_sim, columns=cards_name, index=cards_name)\
+    .to_parquet(LOCAL_OUTPUT_PATH + '/embeddings_matrix.parquet')

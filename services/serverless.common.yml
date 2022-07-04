@@ -20,4 +20,4 @@ custom:
   similarity_table: 'similarity-${self:custom.stage}'
 
   # ECR
-  tf_image: 553371509391.dkr.ecr.us-east-1.amazonaws.com/serverless-magicml-ecr-offline-dev:tf_image
+  ST_image: 553371509391.dkr.ecr.us-east-1.amazonaws.com/serverless-magicml-ecr-offline-dev:ST_image
