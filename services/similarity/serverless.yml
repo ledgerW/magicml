@@ -1,4 +1,4 @@
-frameworkVersion: "2.33.1"
+frameworkVersion: "3.19.0"
 service: magicml-similarity
 
 plugins:
