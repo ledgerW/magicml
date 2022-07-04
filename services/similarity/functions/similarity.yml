@@ -3,6 +3,8 @@ get_embeddings:
   memorySize: 256
   timeout: 900
   maximumRetryAttempts: 0
+  environment:
+    IMAGE: ${self:custom.processing_image}
   layers:
     - {Ref: PythonRequirementsLambdaLayer}
   events:

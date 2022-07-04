@@ -26,6 +26,7 @@ SRC_BUCKET = os.getenv('SOURCE_BUCKET')
 INFERENCE_BUCKET = os.getenv('INFERENCE_BUCKET')
 SM_ROLE = os.getenv('SM_ROLE')
 SIMILARITY_TABLE = os.getenv('SIMILARITY_TABLE')
+IMAGE = os.getenv('IMAGE')
 
 s3 = boto3.client('s3')
 sm = boto3.client('sagemaker')
@@ -43,7 +44,7 @@ def get_embeddings(event, context):
   LOCAL_CODE_PATH = '{}/input/code'.format(MNT_PATH)
   LOCAL_OUTPUT_PATH = '{}/output'.format(MNT_PATH)
 
-  image_uri = '763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-pytorch-trcomp-training:1.10.2-transformers4.17.0-gpu-py38-cu113-ubuntu20.04'
+  image_uri = IMAGE
 
   model_path = 'magicml-LM-2022-06-27-21-08-52-007/output/model.tar.gz'
   model_data = 's3://{}/{}'.format(MODELS_BUCKET, model_path)

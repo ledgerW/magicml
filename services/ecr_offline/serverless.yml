@@ -22,6 +22,9 @@ provider:
       ST_image:
         path: ../
         file: st.Dockerfile
+      processing_image:
+        path: ../
+        file: processing.Dockerfile
 
 functions:
   dummy_ST:
@@ -37,5 +40,21 @@ functions:
     events:
       - http:
           path: dummy_ST
+          method: get
+          cors: true
+
+  dummy_processing:
+    image:
+      name: processing_image
+      command:
+        - api.dummy
+      entryPoint:
+        - '/lambda-entrypoint.sh'
+    memorySize: 128
+    timeout: 60
+    maximumRetryAttempts: 0
+    events:
+      - http:
+          path: dummy_processing
           method: get
           cors: true

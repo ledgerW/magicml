@@ -21,3 +21,4 @@ custom:
 
   # ECR
   ST_image: 553371509391.dkr.ecr.us-east-1.amazonaws.com/serverless-magicml-ecr-offline-dev:ST_image
+  processing_image: 553371509391.dkr.ecr.us-east-1.amazonaws.com/serverless-magicml-ecr-offline-dev:processing_image
