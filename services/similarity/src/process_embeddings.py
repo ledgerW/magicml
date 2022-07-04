@@ -3,10 +3,7 @@ sys.path.append('..')
 sys.setrecursionlimit(100000)
 
 import os
-import json
-import pathlib
 import tarfile
-import boto3
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
