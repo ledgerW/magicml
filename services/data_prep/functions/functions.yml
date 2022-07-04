@@ -1,7 +1,7 @@
 cards_prep:
   handler: cards_prep.worker
-  destinations:
-    onSuccess: ${cf:magicml-similarity-${self:custom.stage}.GetUnderscoreembeddingsLambdaFunctionQualifiedArn}
+  #destinations:
+  #  onSuccess: ${cf:magicml-similarity-${self:custom.stage}.GetUnderscoreembeddingsLambdaFunctionQualifiedArn}
   memorySize: 5000
   timeout: 900
   maximumRetryAttempts: 0

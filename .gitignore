@@ -19,6 +19,7 @@ var/
 __pycache__/
 node_modules/
 
+beir/
 data/
 .ipynb_checkpoints
 notebooks/tfhub*

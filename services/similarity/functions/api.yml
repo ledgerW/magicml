@@ -24,7 +24,7 @@ card_query:
 
 free_text_query:
   image:
-    uri: ${self:custom.tf_image}
+    uri: ${self:custom.ST_image}
     command:
       - api.free_text_query
     entryPoint:
