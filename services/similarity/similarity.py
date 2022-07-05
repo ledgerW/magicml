@@ -164,7 +164,7 @@ def stage_embed_master(event, context):
   print('model')
   s3.download_file(INFERENCE_BUCKET, 'magicBERT/model.tar.gz', MODEL_TAR_PATH)
   print('embeddings.parquet')
-  s3.download_file(INFERENCE_BUCKET, 'magicBERT/cards_embeddings.parquet', CORR_MATRIX_PATH)
+  s3.download_file(INFERENCE_BUCKET, 'magicBERT/embeddings_matrix.parquet', CORR_MATRIX_PATH)
   print('embeddings.npy')
   s3.download_file(INFERENCE_BUCKET, 'magicBERT/embeddings.npy', EMBEDDINGS_PATH)
   print('cards.csv')
