@@ -13,6 +13,12 @@ get_embeddings:
         method: get
         cors: true
         authorizer: aws_iam
+    - s3:
+        bucket: ${self:custom.models_bucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - suffix: model.tar.gz
+        existing: true
   fileSystemConfig:
     localMountPath: '/mnt${self:custom.data_prep_mnt_path}'
     arn: ${cf:magicml-common-${self:custom.stage}.accessPointAArn}

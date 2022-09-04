@@ -5,7 +5,7 @@ sys.setrecursionlimit(100000)
 import os
 import json
 from decimal import Decimal
-import pathlib
+import urllib
 import datetime
 from time import sleep
 import boto3
@@ -37,6 +37,8 @@ def get_embeddings(event, context):
   '''
   '''
   print(event)
+  # get the path (s3 key) to newly trained model in models bucket
+  model_path = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
 
   MNT_PATH = '/opt/ml/processing'
   LOCAL_INPUT_PATH = '{}/input'.format(MNT_PATH)
@@ -46,7 +48,7 @@ def get_embeddings(event, context):
 
   image_uri = IMAGE
 
-  model_path = 'magicml-LM-2022-06-27-21-08-52-007/output/model.tar.gz'
+  #model_path = 'magicml-LM-2022-09-03-20-49-31-687/output/model.tar.gz'
   model_data = 's3://{}/{}'.format(MODELS_BUCKET, model_path)
 
   input_prefix = 'cards'
